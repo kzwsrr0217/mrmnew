@@ -26,15 +26,17 @@ export function MainLayout({ children }: MainLayoutProps) {
         }
     }, [notifications]);
 
-    return (
-        <div className="app-layout">
-            <Header />
-            <div className="app-content-layout"> {/* Megváltoztattam a class nevet, hogy egyértelműbb legyen */}
-                <Sidebar />
-                <main className="app-main-content">
-                    {children} {/* JAVÍTVA: Itt jeleníti meg az oldalt, nem Outlet-tel */}
-                </main>
-            </div>
+return (
+<div className="app-layout">
+<Header />
+           {/* JAVÍTVA: A class nevet 'app-body'-ra cseréltük */}
+<div className="app-body">
+ <Sidebar />
+                {/* JAVÍTVA: A class nevet 'app-content'-re cseréltük */}
+ <main className="app-content">
+ {children}
+ </main>
+ </div>
 
             {showModal && (
                 <div className="modal-backdrop">
