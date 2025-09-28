@@ -12,8 +12,12 @@ async function bootstrap() {
     whitelist: true, // Eltávolítja azokat a tulajdonságokat, amik nem szerepelnek a DTO-ban
   }));
   
-  app.enableCors();
-
+  app.enableCors({
+    origin: 'http://localhost:5173', // A frontend címe, ahonnan a kérések jönnek
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization', // KULCSFONTOSSÁGÚ: Engedélyezzük az Authorization fejlécet
+  });
   await app.listen(3000);
 }
 bootstrap();
