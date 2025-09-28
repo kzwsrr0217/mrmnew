@@ -1,8 +1,7 @@
-// frontend/src/components/AddDocumentForm.tsx
-
 import { useState, FormEvent } from 'react';
 import { uploadDocument } from '../services/api.service';
-import { DocumentType } from '../types'; // Ezt majd bővíteni kell
+import { DocumentType } from '../types'; 
+import { Modal } from './Modal'; // Importáljuk a Modal komponenst
 
 interface AddDocumentFormProps {
   systemId: number;
@@ -18,16 +17,14 @@ export function AddDocumentForm({ systemId, onDocumentAdded, onCancel }: AddDocu
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!file && (type === DocumentType.RENDSZERENGEDELY || type === DocumentType.UBSZ)) {
-      setError('Ehhez a dokumentumtípushoz kötelező fájlt feltölteni.');
+    if (!file) {
+      setError('A fájl feltöltése kötelező.');
       return;
     }
     setError(null);
 
     const formData = new FormData();
-    if (file) {
-      formData.append('file', file);
-    }
+    formData.append('file', file);
     formData.append('system_id', String(systemId));
     formData.append('type', type);
     formData.append('registration_number', regNumber);
@@ -42,25 +39,28 @@ export function AddDocumentForm({ systemId, onDocumentAdded, onCancel }: AddDocu
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h4>Új dokumentum feltöltése</h4>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <div>
-        <label>Típus:</label>
-        <select value={type} onChange={(e) => setType(e.target.value as DocumentType)}>
-          {Object.values(DocumentType).map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
-      <div>
-        <label>Nyilvántartási szám:</label>
-        <input type="text" value={regNumber} onChange={(e) => setRegNumber(e.target.value)} />
-      </div>
-      <div>
-        <label>Fájl (PDF):</label>
-        <input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)} />
-      </div>
-      <button type="submit">Feltöltés</button>
-      <button type="button" onClick={onCancel}>Mégse</button>
-    </form>
+    <Modal title="Új dokumentum feltöltése" onClose={onCancel}>
+        <form onSubmit={handleSubmit}>
+        {error && <p style={{ color: 'red' }}>{error}</p>}
+        <div>
+            <label>Típus:</label>
+            <select value={type} onChange={(e) => setType(e.target.value as DocumentType)}>
+            {Object.values(DocumentType).map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+        </div>
+        <div>
+            <label>Nyilvántartási szám:</label>
+            <input type="text" value={regNumber} onChange={(e) => setRegNumber(e.target.value)} />
+        </div>
+        <div>
+            <label>Fájl (PDF):</label>
+            <input type="file" accept=".pdf" onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)} required />
+        </div>
+        <div className="form-actions">
+            <button type="button" onClick={onCancel}>Mégse</button>
+            <button type="submit">Feltöltés</button>
+        </div>
+        </form>
+    </Modal>
   );
 }

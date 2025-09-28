@@ -1,7 +1,6 @@
-// frontend/src/components/AddPermitForm.tsx
-
 import { useState, useEffect, FormEvent } from 'react';
 import { createSystemPermit, updateSystemPermit, getClassifications } from '../services/api.service';
+import { Modal } from './Modal'; // Importáljuk a Modal komponenst
 
 // Típusdefiníciók
 interface Permit {
@@ -29,7 +28,6 @@ interface AddPermitFormProps {
 }
 
 export function AddPermitForm({ systemId, permit, onPermitChange, onCancel }: AddPermitFormProps) {
-  // Állapotváltozók az űrlap mezőihez
   const [engedelySzam, setEngedelySzam] = useState('');
   const [kerelemSzam, setKerelemSzam] = useState('');
   const [kiallitasDatuma, setKiallitasDatuma] = useState('');
@@ -43,7 +41,6 @@ export function AddPermitForm({ systemId, permit, onPermitChange, onCancel }: Ad
   
   const isEditMode = !!permit;
 
-  // Adatok betöltése és űrlap feltöltése (ha szerkesztés van)
   useEffect(() => {
     getClassifications()
       .then(res => setClassifications(res.data))
@@ -60,10 +57,8 @@ export function AddPermitForm({ systemId, permit, onPermitChange, onCancel }: Ad
     }
   }, [permit, isEditMode]);
   
-  // A minősítések szűrése típus szerint
   const filterClassifications = (type: string) => classifications.filter(c => c.type === type);
 
-  // Űrlap elküldése
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -92,60 +87,63 @@ export function AddPermitForm({ systemId, permit, onPermitChange, onCancel }: Ad
   };
   
   return (
-    <form onSubmit={handleSubmit} className="add-permit-form">
-      <h4>{isEditMode ? 'Engedély módosítása' : 'Új engedély rögzítése'}</h4>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+    <Modal title={isEditMode ? 'Engedély módosítása' : 'Új engedély rögzítése'} onClose={onCancel}>
+      <form onSubmit={handleSubmit}>
+        {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      <div>
-        <label>Engedély száma:</label>
-        <input type="text" value={engedelySzam} onChange={e => setEngedelySzam(e.target.value)} required />
-      </div>
-      <div>
-        <label>Kérelem száma:</label>
-        <input type="text" value={kerelemSzam} onChange={e => setKerelemSzam(e.target.value)} />
-      </div>
-      <div>
-        <label>Kiállítás dátuma:</label>
-        <input type="date" value={kiallitasDatuma} onChange={e => setKiallitasDatuma(e.target.value)} required />
-      </div>
-       <div>
-        <label>Érvényesség dátuma:</label>
-        <input type="date" value={ervenyessegDatuma} onChange={e => setErvenyessegDatuma(e.target.value)} required />
-      </div>
-
-      <fieldset>
-        <legend>Minősítések</legend>
         <div>
-          <label>Nemzeti:</label>
-          <select value={nemzetiId} onChange={e => setNemzetiId(e.target.value)}>
-            <option value="">-- Nincs --</option>
-            {filterClassifications('NEMZETI').map(c => 
-              <option key={c.classification_id} value={c.classification_id}>{c.level_name}</option>
-            )}
-          </select>
+          <label>Engedély száma:</label>
+          <input type="text" value={engedelySzam} onChange={e => setEngedelySzam(e.target.value)} required />
         </div>
         <div>
-          <label>NATO:</label>
-          <select value={natoId} onChange={e => setNatoId(e.target.value)}>
-            <option value="">-- Nincs --</option>
-            {filterClassifications('NATO').map(c => 
-              <option key={c.classification_id} value={c.classification_id}>{c.level_name}</option>
-            )}
-          </select>
+          <label>Kérelem száma:</label>
+          <input type="text" value={kerelemSzam} onChange={e => setKerelemSzam(e.target.value)} />
         </div>
         <div>
-          <label>EU:</label>
-          <select value={euId} onChange={e => setEuId(e.target.value)}>
-            <option value="">-- Nincs --</option>
-            {filterClassifications('EU').map(c => 
-              <option key={c.classification_id} value={c.classification_id}>{c.level_name}</option>
-            )}
-          </select>
+          <label>Kiállítás dátuma:</label>
+          <input type="date" value={kiallitasDatuma} onChange={e => setKiallitasDatuma(e.target.value)} required />
         </div>
-      </fieldset>
+          <div>
+          <label>Érvényesség dátuma:</label>
+          <input type="date" value={ervenyessegDatuma} onChange={e => setErvenyessegDatuma(e.target.value)} required />
+        </div>
 
-      <button type="submit">{isEditMode ? 'Módosítás' : 'Hozzáadás'}</button>
-      <button type="button" onClick={onCancel}>Mégse</button>
-    </form>
+        <fieldset>
+          <legend>Minősítések</legend>
+          <div>
+            <label>Nemzeti:</label>
+            <select value={nemzetiId} onChange={e => setNemzetiId(e.target.value)}>
+              <option value="">-- Nincs --</option>
+              {filterClassifications('NEMZETI').map(c => 
+                <option key={c.classification_id} value={c.classification_id}>{c.level_name}</option>
+              )}
+            </select>
+          </div>
+          <div>
+            <label>NATO:</label>
+            <select value={natoId} onChange={e => setNatoId(e.target.value)}>
+              <option value="">-- Nincs --</option>
+              {filterClassifications('NATO').map(c => 
+                <option key={c.classification_id} value={c.classification_id}>{c.level_name}</option>
+              )}
+            </select>
+          </div>
+          <div>
+            <label>EU:</label>
+            <select value={euId} onChange={e => setEuId(e.target.value)}>
+              <option value="">-- Nincs --</option>
+              {filterClassifications('EU').map(c => 
+                <option key={c.classification_id} value={c.classification_id}>{c.level_name}</option>
+              )}
+            </select>
+          </div>
+        </fieldset>
+
+        <div className="form-actions">
+            <button type="button" onClick={onCancel}>Mégse</button>
+            <button type="submit">{isEditMode ? 'Módosítás' : 'Hozzáadás'}</button>
+        </div>
+      </form>
+    </Modal>
   );
 }
