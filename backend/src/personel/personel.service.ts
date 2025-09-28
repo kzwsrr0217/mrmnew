@@ -1,6 +1,6 @@
 // mrmnew/backend/src/personel/personel.service.ts
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Personel } from './personel.entity';
 import { Repository } from 'typeorm';
@@ -111,9 +111,17 @@ export class PersonelService {
 
 
   async remove(id: number): Promise<void> {
-    const result = await this.personelRepo.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`A(z) ${id} azonosítójú személy nem található.`);
+    try {
+      const result = await this.personelRepo.delete(id);
+      if (result.affected === 0) {
+        throw new NotFoundException(`A(z) ${id} azonosítójú személy nem található.`);
+      }
+    } catch (error) {
+      if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        throw new ConflictException('A személy nem törölhető, mert még rendelkezik aktív rendszerhozzáféréssel.');
+      }
+      // Dobja tovább az egyéb, nem várt hibákat
+      throw error;
     }
   }
 }

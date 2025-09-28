@@ -1,6 +1,6 @@
 // mrmnew/backend/src/access-requests/access-requests.controller.ts
 
-import { Controller, UseGuards, Post, Body, Request, Get, Param, ParseIntPipe, Patch, ForbiddenException } from '@nestjs/common';
+import { Controller, UseGuards, Post, Body, Request, Get, Param, ParseIntPipe, Patch } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
@@ -26,16 +26,16 @@ export class AccessRequestsController {
     }
 
     @Patch(':id/approve')
-    @Roles(UserRole.ADMIN, UserRole.BV, UserRole.HBV, UserRole.HHBV) // Csak a BV és helyettesei hagynak jóvá
+    // Győződj meg róla, hogy az ADMIN szerepel itt
+    @Roles(UserRole.ADMIN, UserRole.BV, UserRole.HBV, UserRole.HHBV)
     approve(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
         return this.accessRequestsService.approveByBv(id, req.user);
     }
     
     @Patch(':id/reject')
-    @Roles(UserRole.ADMIN, UserRole.BV, UserRole.HBV, UserRole.HHBV) // Csak ők utasíthatnak el
+    // Győződj meg róla, hogy az ADMIN itt is szerepel
+    @Roles(UserRole.ADMIN, UserRole.BV, UserRole.HBV, UserRole.HHBV)
     reject(@Param('id', ParseIntPipe) id: number, @Request() req: any, @Body() dto: RejectAccessRequestDto) {
         return this.accessRequestsService.reject(id, req.user, dto);
     }
-    
-    // A 'complete' végpontot töröltük, mert az RA a ticketet fogja kezelni
 }

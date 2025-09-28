@@ -93,8 +93,15 @@ export function PersonelPage() {
         try {
             await deletePersonel(personelId);
             fetchPersonel();
-        } catch (err) {
-            alert('A törlés sikertelen.');
+        } catch (err: any) { // Típus any, hogy hozzáférjünk a response-hoz
+            if (err.response && err.response.status === 409) {
+                // Specifikus hibaüzenet a backendtől, ha a státuszkód 409 (Conflict)
+                alert(err.response.data.message);
+            } else {
+                // Általános hibaüzenet minden más esetre
+                alert('A törlés sikertelen.');
+                console.error("Törlési hiba:", err); // Logoljuk a részletes hibát a konzolra
+            }
         }
     }
   }

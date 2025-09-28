@@ -35,7 +35,7 @@ function App() {
         <Route path="/tickets" element={<ProtectedRoute><MainLayout><TicketsPage /></MainLayout></ProtectedRoute>} />
         <Route path="/tickets/:id" element={<ProtectedRoute><MainLayout><TicketDetailPage /></MainLayout></ProtectedRoute>} />
         <Route path="/forms" element={<ProtectedRoute roles={[UserRole.ADMIN, UserRole.RBF]}><MainLayout><FormGeneratorPage /></MainLayout></ProtectedRoute>} />
-        <Route path="/pending-requests" element={<ProtectedRoute roles={[UserRole.BV, UserRole.HBV, UserRole.HHBV, UserRole.SZBF]}><MainLayout><PendingRequestsPage /></MainLayout></ProtectedRoute>} />
+        <Route path="/pending-requests" element={<ProtectedRoute roles={[UserRole.BV, UserRole.ADMIN, UserRole.HBV, UserRole.HHBV, UserRole.SZBF]}><MainLayout><PendingRequestsPage /></MainLayout></ProtectedRoute>} />
         <Route path="/maintenance" element={<ProtectedRoute><MainLayout><MaintenancePage /></MainLayout></ProtectedRoute>} />
         <Route path="/logistics" element={<ProtectedRoute><MainLayout><LogisticsPage /></MainLayout></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><AdminPage /></MainLayout></ProtectedRoute>} />

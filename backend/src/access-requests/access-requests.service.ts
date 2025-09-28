@@ -1,11 +1,9 @@
-// mrmnew/backend/src/access-requests/access-requests.service.ts
-
-import { Injectable, NotFoundException, ForbiddenException, ConflictException, Logger } from '@nestjs/common'; // Logger importálva
+import { Injectable, NotFoundException, ForbiddenException, ConflictException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Personel } from 'src/personel/personel.entity';
 import { System } from 'src/systems/system.entity';
 import { SystemAccess } from 'src/system-access/system-access.entity';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { AccessRequest, RequestStatus } from './access-request.entity';
 import { User, UserRole } from 'src/users/user.entity';
 import { CreateAccessRequestDto } from './dto/create-access-request.dto';
@@ -14,7 +12,7 @@ import { Ticket, TicketPriority } from 'src/tickets/ticket.entity';
 
 @Injectable()
 export class AccessRequestsService {
-    private readonly logger = new Logger(AccessRequestsService.name); // <-- EZ A SOR HIÁNYZOTT
+    private readonly logger = new Logger(AccessRequestsService.name);
 
     constructor(
         @InjectRepository(AccessRequest) private requestRepo: Repository<AccessRequest>,
@@ -25,8 +23,8 @@ export class AccessRequestsService {
         @InjectRepository(Ticket) private ticketRepo: Repository<Ticket>,
     ) {}
 
+    // ... create metódus változatlan ...
     async create(dto: CreateAccessRequestDto, requester: User): Promise<AccessRequest> {
-        // ... (Ez a metódus szinte változatlan, csak a kezdő státuszt módosítjuk)
         const personel = await this.personelRepo.findOneBy({ personel_id: dto.personelId });
         if (!personel) throw new NotFoundException('Személy nem található.');
         const system = await this.systemRepo.findOneBy({ systemid: dto.systemId });
@@ -41,47 +39,47 @@ export class AccessRequestsService {
             system,
             access_level: dto.accessLevel,
             requester: requesterUser,
-            status: RequestStatus.BV_JOVAHAGYASRA_VAR, // MÓDOSÍTVA: Egyből a BV-hez megy
+            status: RequestStatus.BV_JOVAHAGYASRA_VAR,
         });
         return this.requestRepo.save(newRequest);
     }
 
+    // JAVÍTVA: Kiegészítve az ADMIN szerepkörrel
     findPendingForUser(user: User): Promise<AccessRequest[]> {
-        // Egyszerűsödik: már csak a BV és helyettesei látják ezt a listát
-        if ([UserRole.BV, UserRole.HBV, UserRole.HHBV].includes(user.role)) {
-            return this.requestRepo.find({ where: { status: RequestStatus.BV_JOVAHAGYASRA_VAR } });
+        if ([UserRole.ADMIN, UserRole.BV, UserRole.HBV, UserRole.HHBV].includes(user.role)) {
+            return this.requestRepo.find({ 
+                where: { status: RequestStatus.BV_JOVAHAGYASRA_VAR },
+                // Mindig töltsük be a relációkat a frontend számára
+                relations: ['personel', 'system', 'requester'] 
+            });
         }
         return Promise.resolve([]);
     }
     
-    // approveBySzbf metódus törölve
-
+    // ... többi metódus változatlan ...
     async approveByBv(requestId: number, approver: User): Promise<Ticket> {
         const request = await this.getRequestById(requestId);
         if (request.status !== RequestStatus.BV_JOVAHAGYASRA_VAR) {
             throw new ForbiddenException('Ez a kérelem nem hagyható jóvá ebben az állapotban.');
         }
         
-        // 1. Kérelem státuszának módosítása
         request.status = RequestStatus.ENGEDELYEZVE;
         request.bv_approver = approver;
         await this.requestRepo.save(request);
 
-        // 2. RA felhasználó megkeresése
         const raUser = await this.userRepo.findOne({ where: { role: UserRole.RA } });
         if (!raUser) {
             this.logger.warn('Nincs RA szerepkörű felhasználó, akinek a ticketet ki lehetne osztani.');
             throw new NotFoundException('Rendszeradminisztrátor nem található a feladat kiosztásához.');
         }
 
-        // 3. Új TICKET létrehozása az RA számára
         const ticketTitle = `[HOZZÁFÉRÉS] ${request.personel.nev} - ${request.system.systemname}`;
         const newTicket = this.ticketRepo.create({
             title: ticketTitle,
             description: `Új hozzáférés beállítása szükséges.\nSzemély: ${request.personel.nev}\nRendszer: ${request.system.systemname}\nJogosultság: ${request.access_level}`,
             priority: TicketPriority.MAGAS,
             assignee: raUser,
-            accessRequest: request, // Összekötjük a ticketet a kérelemmel
+            accessRequest: request,
         });
 
         return this.ticketRepo.save(newTicket);
@@ -98,11 +96,11 @@ export class AccessRequestsService {
         return this.requestRepo.save(request);
     }
 
-    // A 'complete' metódus logikája átkerül a ticketing rendszerbe egy eseménykezelőn keresztül
-    // Ezt a következő lépésben valósítjuk meg. Egyelőre töröljük innen.
-
     private async getRequestById(id: number): Promise<AccessRequest> {
-        const request = await this.requestRepo.findOneBy({ id });
+        const request = await this.requestRepo.findOne({
+            where: { id: id },
+            relations: ['personel', 'system']
+        });
         if (!request) {
             throw new NotFoundException(`A(z) ${id} azonosítójú kérelem nem található.`);
         }

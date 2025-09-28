@@ -6,7 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Ticket, TicketStatus } from './ticket.entity';
 import { Repository } from 'typeorm';
 import { CreateTicketDto } from './dto/create-ticket.dto';
-import { User } from '../users/user.entity';
+import { User, UserRole } from '../users/user.entity';
 import { TicketComment } from './ticket-comment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 
@@ -47,6 +47,26 @@ export class TicketsService {
     return this.ticketsRepository.find({
       order: { created_at: 'DESC' },
     });
+  }
+
+  /**
+   * Visszaadja a tickeket a felhasználó jogosultsága alapján.
+   * Admin minden ticketet lát, a többi felhasználó csak a sajátját
+   * és a hozzá rendelteket.
+   */
+  async findAllForUser(user: User): Promise<Ticket[]> {
+    const query = this.ticketsRepository.createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.creator', 'creator')
+      .leftJoinAndSelect('ticket.assignee', 'assignee')
+      .orderBy('ticket.created_at', 'DESC');
+
+    // Ha a felhasználó NEM admin, akkor szűrünk a létrehozóra vagy a felelősre
+    if (user.role !== UserRole.ADMIN) {
+      query.where('creator.id = :userId OR assignee.id = :userId', { userId: user.id });
+    }
+    // Ha admin, a feltétel kimarad, így minden ticketet visszaad.
+
+    return query.getMany();
   }
 
   async findOne(id: number, requestingUser?: User): Promise<Ticket> {

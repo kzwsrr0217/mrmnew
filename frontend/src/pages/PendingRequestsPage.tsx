@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getPendingRequests, approveRequest, rejectRequest } from '../services/api.service';
-import { AccessRequest, RequestStatus } from '../types'; // UserRole importálása
+// JAVÍTVA: A UserRole importálása a types.ts fájlból
+import { AccessRequest, RequestStatus, UserRole } from '../types'; 
 import { useAuth } from '../auth/AuthContext';
 import { formatDate } from '../utils/date.utils';
 
@@ -11,7 +12,6 @@ export function PendingRequestsPage() {
     const { user } = useAuth();
     const [rejectionReason, setRejectionReason] = useState<string>('');
     const [showRejectionModal, setShowRejectionModal] = useState<number | null>(null);
-
 
     const fetchRequests = async () => {
         setLoading(true);
@@ -42,7 +42,7 @@ export function PendingRequestsPage() {
     const handleReject = async () => {
         if (!showRejectionModal || !rejectionReason) return;
         try {
-            await rejectRequest(showRejectionModal, rejectionReason);
+            await rejectRequest(showRejectionModal, { reason: rejectionReason }); // DTO-nak megfelelően
             setShowRejectionModal(null);
             setRejectionReason('');
             fetchRequests();
@@ -51,23 +51,13 @@ export function PendingRequestsPage() {
         }
     };
 
-    const canApprove = (request: AccessRequest): boolean => {
-        // --- JAVÍTÁS ITT ---
+    const canApprove = (): boolean => {
         if (!user || !user.role) {
             return false;
         }
-        
-        // A felhasználó szerepköre
-        const userRole = user.role;
-        // A kérelem státusza
-        const currentStatus = request.status;
-        
-        // A jóváhagyók listája
-        const approverRoles = [UserRole.BV, UserRole.HBV, UserRole.HHBV];
-
-        // A gomb akkor jelenik meg, ha a felhasználó szerepköre szerepel a jóváhagyók között,
-        // ÉS a kérelem a megfelelő státuszban van.
-        return approverRoles.includes(userRole) && currentStatus === RequestStatus.BV_JOVAHAGYASRA_VAR;
+        // Admin, BV és helyettesei hagyhatnak jóvá ebben a nézetben
+        const approverRoles = [UserRole.ADMIN, UserRole.BV, UserRole.HBV, UserRole.HHBV];
+        return approverRoles.includes(user.role as UserRole);
     };
     
     if (loading) return <p>Betöltés...</p>;
@@ -101,7 +91,8 @@ export function PendingRequestsPage() {
                                 <td>{req.status}</td>
                                 <td>{formatDate(req.createdAt)}</td>
                                 <td>
-                                    {canApprove(req) && (
+                                    {/* A canApprove már nem függ a requesttől, hanem a bejelentkezett felhasználótól */}
+                                    {canApprove() && req.status === RequestStatus.BV_JOVAHAGYASRA_VAR && (
                                         <>
                                             <button onClick={() => handleApprove(req.id)} style={{marginRight: '8px'}}>Jóváhagyás</button>
                                             <button onClick={() => setShowRejectionModal(req.id)} style={{backgroundColor: '#dc3545'}}>Elutasítás</button>
@@ -116,17 +107,24 @@ export function PendingRequestsPage() {
 
             {showRejectionModal !== null && (
                 <div className="modal-backdrop">
-                    <div className="modal">
-                        <h2>Kérelem Elutasítása</h2>
-                        <p>Kérlek, add meg az elutasítás okát:</p>
-                        <textarea 
-                            rows={4} 
-                            value={rejectionReason} 
-                            onChange={(e) => setRejectionReason(e.target.value)} 
-                            style={{width: '100%', marginBottom: '1rem'}}
-                        />
-                        <button onClick={handleReject} style={{marginRight: '8px'}}>Elutasítás megerősítése</button>
-                        <button onClick={() => setShowRejectionModal(null)}>Mégse</button>
+                    <div className="modal-content"> {/* Használjuk a központi modal stílust */}
+                        <div className="modal-header">
+                          <h2>Kérelem Elutasítása</h2>
+                           <button onClick={() => setShowRejectionModal(null)} className="close-button">&times;</button>
+                        </div>
+                        <div className="modal-body">
+                          <p>Kérlek, add meg az elutasítás okát:</p>
+                          <textarea 
+                              rows={4} 
+                              value={rejectionReason} 
+                              onChange={(e) => setRejectionReason(e.target.value)} 
+                              style={{width: '100%', marginBottom: '1rem'}}
+                          />
+                          <div className="form-actions">
+                            <button type="button" onClick={() => setShowRejectionModal(null)}>Mégse</button>
+                            <button onClick={handleReject} style={{backgroundColor: '#dc3545', color: 'white'}}>Elutasítás megerősítése</button>
+                          </div>
+                        </div>
                     </div>
                 </div>
             )}
