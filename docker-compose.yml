@@ -1,9 +1,7 @@
 services:
-  # Adatbázis szolgáltatás (MySQL)
   db:
     image: mysql:8.0
     container_name: mrm-db
-    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: mrmdb
@@ -12,32 +10,34 @@ services:
     volumes:
       - db_data:/var/lib/mysql
 
-  # Backend szolgáltatás (NestJS)
   backend:
-    build: ./backend # <-- JAVÍTVA
+    build:
+      context: ./backend
     container_name: mrm-backend
-    restart: unless-stopped
+
     ports:
       - "3000:3000"
     volumes:
-      - ./backend:/usr/src/app # <-- JAVÍTVA
+      - ./backend:/usr/src/app
+      # EZ A JAVÍTÁS: Megvédi a node_modules mappát a konténerben
       - /usr/src/app/node_modules
-    environment:
-      - CHOKIDAR_USEPOLLING=true
     depends_on:
       - db
+    environment:
+      DATABASE_URL: mysql://root:rootpassword@db:3306/mrmdb
 
-  # Frontend szolgáltatás (React Dev Server)
-# Frontend szolgáltatás (React Dev Server)
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+    container_name: mrm-frontend
     ports:
       - "5173:5173"
     volumes:
       - ./frontend:/usr/src/app
-      - /usr/src/app/node_modules # <-- EZT A SORT ADD HOZZÁ!
-    environment:
-      - CHOKIDAR_USEPOLLING=true
+      # EZ A JAVÍTÁS: Megvédi a node_modules mappát a konténerben
+      - /usr/src/app/node_modules
+    depends_on:
+      - backend
 
 volumes:
   db_data:

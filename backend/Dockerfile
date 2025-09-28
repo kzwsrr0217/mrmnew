@@ -9,6 +9,13 @@ WORKDIR /usr/src/app
 # Először csak a package.json fájlokat másoljuk, hogy a Docker cache-t ki tudjuk használni
 COPY package*.json ./
 
+# ==================== A JAVÍTÁS ====================
+# Kifejezetten beállítjuk a környezetet 'development'-re a build idejére.
+# Ez garantálja, hogy a devDependencies is telepítésre kerüljenek,
+# felülírva bármilyen más rejtett beállítást.
+ENV NODE_ENV=development
+# ===================================================
+
 # Függőségek telepítése
 RUN npm install
 
