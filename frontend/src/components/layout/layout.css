@@ -1,0 +1,90 @@
+/* mrmnew/frontend/src/components/layout/layout.css */
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Behúzza a user menüt jobbra */
+  padding: 0 2rem;
+  background-color: #1a2a44;
+  color: white;
+  height: 60px;
+  flex-shrink: 0;
+}
+
+.header-brand {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.header-user-menu {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.notification-badge {
+    background-color: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    margin-left: 8px;
+    vertical-align: top;
+}
+
+.logout-button {
+  background-color: #e44d26;
+  color: white;
+  border: none;
+}
+
+.app-body {
+  display: flex;
+  flex-grow: 1;
+  overflow: hidden; /* Megakadályozza a dupla görgetősávot */
+}
+
+.app-sidebar {
+  width: 240px;
+  background-color: #f4f6f8;
+  padding: 1rem;
+  flex-shrink: 0;
+  border-right: 1px solid #ddd;
+}
+
+.app-sidebar h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.app-sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* Térköz a menüpontok között */
+}
+
+.app-sidebar a {
+  padding: 0.75rem;
+  text-decoration: none;
+  color: #333;
+  border-radius: 4px;
+}
+
+.app-sidebar a:hover, .app-sidebar a.active {
+  background-color: #e9ecef;
+}
+
+.app-content {
+  flex-grow: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  text-align: left;
+}
