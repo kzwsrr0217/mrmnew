@@ -33,6 +33,7 @@ export enum TempestLevel {
   A = 'LEVEL A',
   B = 'LEVEL B',
   C = 'LEVEL C',
+  D = 'COTS',
 }
 export enum DocumentType {
   RENDSZERENGEDELY = 'Rendszerengedély',

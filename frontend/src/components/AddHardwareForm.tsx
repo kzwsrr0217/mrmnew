@@ -23,9 +23,9 @@ export function AddHardwareForm({ systemId, hardwareToEdit, locations, onSuccess
     tempest_number: '',
     workstation_type: WorkstationType.ASZTALI,
     inventory_number: '',
-    storage_size_gb: '',
+    storage_size_gb: '', // Üres stringként inicializáljuk a form miatt
     storage_type: StorageType.SSD,
-    parent_hardware_id: '',
+    parent_hardware_id: '', // Üres stringként inicializáljuk a form miatt
     locationId: '',
   });
   const [selectedClassificationIds, setSelectedClassificationIds] = useState<number[]>([]);
@@ -74,6 +74,7 @@ export function AddHardwareForm({ systemId, hardwareToEdit, locations, onSuccess
     loadDependencies();
   }, [systemId, hardwareToEdit]);
 
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     const isCheckbox = type === 'checkbox';
@@ -87,16 +88,19 @@ export function AddHardwareForm({ systemId, hardwareToEdit, locations, onSuccess
     );
   };
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    setError(null);
+const handleSubmit = async (event: FormEvent) => {
+  event.preventDefault();
+  setError(null);
 
-    const payload: any = {
-      ...formData,
-      system_id: systemId,
-      locationId: formData.locationId ? Number(formData.locationId) : null,
-      classification_ids: selectedClassificationIds,
-    };
+    // JAVÍTÁS (1. Hiba): Konvertáljuk az üres stringeket null-ra a numerikus mezőknél
+  const payload: any = {
+    ...formData,
+    system_id: systemId,
+    locationId: formData.locationId ? Number(formData.locationId) : null,
+    storage_size_gb: formData.storage_size_gb ? parseInt(formData.storage_size_gb, 10) : null,
+    parent_hardware_id: formData.parent_hardware_id ? parseInt(formData.parent_hardware_id, 10) : null,
+    classification_ids: selectedClassificationIds,
+  };
 
     try {
       if (hardwareToEdit) {
@@ -106,13 +110,16 @@ export function AddHardwareForm({ systemId, hardwareToEdit, locations, onSuccess
       }
       onSuccess();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Hiba a hardver mentése közben.');
+        const errorMessage = Array.isArray(err.response?.data?.message)
+        ? err.response.data.message.join(', ')
+        : err.response?.data?.message || 'Hiba a hardver mentése közben.';
+      setError(errorMessage);
     }
   };
 
   return (
     <div className="modal-backdrop">
-      <div className="modal-content large">
+      <div className="modal large">
         <form onSubmit={handleSubmit}>
           <h4>{hardwareToEdit ? 'Hardver szerkesztése' : 'Új hardver rögzítése'}</h4>
           {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -176,8 +183,17 @@ export function AddHardwareForm({ systemId, hardwareToEdit, locations, onSuccess
               </div>
               <div>
                 <label>Minősítések:</label>
+                {/* JAVÍTÁS (2. és 3. Hiba): Egyedi 'key' és 'htmlFor'/'id' párosok */}
                 {availableClassifications.map(c => (
-                  <div key={c.id}><input type="checkbox" id={`class-${c.id}`} checked={selectedClassificationIds.includes(c.id)} onChange={() => handleClassificationChange(c.id)} /><label htmlFor={`class-${c.id}`}>{c.type} - {c.level_name}</label></div>
+                  <div key={`class-wrapper-${c.classification_id}`}> {/* Egyedi key a külső div-nek */}
+                    <input 
+                      type="checkbox" 
+                      id={`class-checkbox-${c.classification_id}`} // Egyedi ID a checkboxnak
+                      checked={selectedClassificationIds.includes(c.classification_id)} 
+                      onChange={() => handleClassificationChange(c.classification_id)} 
+                    />
+                    <label htmlFor={`class-checkbox-${c.classification_id}`}>{c.type} - {c.level_name}</label> {/* Ez az ID-re hivatkozik */}
+                  </div>
                 ))}
               </div>
             </fieldset>

@@ -171,7 +171,7 @@ export const getStockItems = () => {
   return apiClient.get('/logistics/items/stock');
 };
 
-export const assignLogisticsItem = (data: { itemId: number; systemId: number; type: string; notes?: string; }) => {
+export const assignLogisticsItem = (data: any) => { // 'any' a rugalmasságért, de lehetne egy specifikus interface is
   return apiClient.post('/logistics/assign', data);
 };
 
