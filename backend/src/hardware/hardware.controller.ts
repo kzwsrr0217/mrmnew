@@ -1,8 +1,10 @@
 // mrm-backend/src/hardware/hardware.controller.ts
 
-import { Controller, Post, Body, Get, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Patch, Body, Get, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { HardwareService } from './hardware.service';
 import { CreateHardwareDto } from './dto/create-hardware.dto';
+import { UpdateHardwareDto } from './dto/update-hardware.dto'; // <-- ÚJ IMPORT
+
 
 @Controller('hardware')
 export class HardwareController {
@@ -29,5 +31,9 @@ export class HardwareController {
     @Param('softwareId') softwareId: string,
   ) {
     return this.hardwareService.addSoftwareToHardware(+hardwareId, +softwareId);
+  }
+    @Patch(':id')
+  update(@Param('id') id: string, @Body() updateHardwareDto: UpdateHardwareDto) {
+    return this.hardwareService.update(+id, updateHardwareDto);
   }
 }

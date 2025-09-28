@@ -3,11 +3,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { Hardware, HardwareType } from './hardware.entity'; // HardwareType importálása
+import { Hardware, HardwareType } from './hardware.entity';
 import { CreateHardwareDto } from './dto/create-hardware.dto';
 import { System } from '../systems/system.entity';
 import { ClassificationLevel } from '../classifications/classification.entity';
 import { Software } from '../software/software.entity';
+import { UpdateHardwareDto } from './dto/update-hardware.dto';
 
 @Injectable()
 export class HardwareService {
@@ -24,12 +25,9 @@ export class HardwareService {
       throw new NotFoundException(`A(z) ${dto.system_id} azonosítójú rendszer nem található.`);
     }
     
-    // A DTO-ból létrehozzuk az entitást
     const hardware = this.hardwareRepo.create(dto);
     hardware.system = system;
 
-    // --- A meglévő logika változatlan ---
-    // JAVÍTÁS: Csak akkor keressük a szülőt, ha az ID nem csak létezik, de nem is üres string
     if (dto.parent_hardware_id && dto.parent_hardware_id !== null) {
       const parent = await this.hardwareRepo.findOneBy({ hardware_id: dto.parent_hardware_id });
       if (!parent) {
@@ -48,11 +46,8 @@ export class HardwareService {
       hardware.classifications = classifications;
     }
     
-    // --- JAVÍTOTT ADATTISZTÍTÁS ---
-    // Az üresen maradt numerikus mezőket explicit null-ra állítjuk
     if (hardware.storage_size_gb === '' as any) hardware.storage_size_gb = null;
 
-    // Típus alapján kinullázzuk a nem releváns mezőket
     if (hardware.type !== HardwareType.MUNKAALLOMAS) {
       hardware.workstation_type = null;
     }
@@ -60,7 +55,6 @@ export class HardwareService {
       hardware.inventory_number = null;
       hardware.storage_size_gb = null;
       hardware.storage_type = null;
-      // JAVÍTÁS: A 'parent_hardware' objektumot null-ázzuk, nem egy nem létező ID-t
       hardware.parent_hardware = null; 
     }
     if (hardware.is_tempest !== true) {
@@ -69,11 +63,9 @@ export class HardwareService {
       hardware.tempest_number = null;
     }
     
-    // A megtisztított hardware objektum mentése
     return this.hardwareRepo.save(hardware);
   }
 
-  // ... a fájl többi része változatlan
   findAllForSystem(systemId: number): Promise<Hardware[]> {
     return this.hardwareRepo.find({
       where: { system: { systemid: systemId } },
@@ -109,5 +101,18 @@ export class HardwareService {
     if (result.affected === 0) {
       throw new NotFoundException(`A(z) ${id} azonosítójú hardver nem található.`);
     }
+  }
+
+  async update(id: number, updateHardwareDto: UpdateHardwareDto): Promise<Hardware> {
+    const hardware = await this.hardwareRepo.preload({
+      hardware_id: id,
+      ...updateHardwareDto,
+    });
+
+    if (!hardware) {
+      throw new NotFoundException(`A(z) ${id} azonosítójú hardver nem található.`);
+    }
+
+    return this.hardwareRepo.save(hardware);
   }
 }

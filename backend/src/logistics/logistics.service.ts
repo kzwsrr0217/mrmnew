@@ -4,7 +4,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Hardware, HardwareType } from 'src/hardware/hardware.entity';
 import { System } from 'src/systems/system.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { LogisticsItem, LogisticsItemStatus } from './entities/logistics-item.entity';
 import { CreateLogisticsItemDto } from './dto/create-logistics-item.dto';
 import { AssignLogisticsItemDto } from './dto/assign-logistics-item.dto';
