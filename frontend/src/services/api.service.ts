@@ -87,6 +87,16 @@ export const createSystem = (data: { systemname: string, description: string }) 
   return apiClient.post('/systems', data);
 };
 
+// EZ AZ ELSŐ ÚJ FÜGGVÉNY
+export const getSystemById = (id: number) => {
+  return apiClient.get(`/systems/${id}`);
+};
+
+// EZ A MÁSODIK ÚJ FÜGGVÉNY
+export const updateSystemStatus = (id: number, status: string) => {
+  return apiClient.patch(`/systems/${id}/status`, { status });
+};
+
 // --- Rendszerengedély (SystemPermits) végpontok ---
 export const getPermitForSystem = (systemId: number) => {
   return apiClient.get(`/system-permits/by-system/${systemId}`);

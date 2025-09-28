@@ -3,7 +3,7 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { System } from './system.entity';
+import { System, SystemStatus } from './system.entity'; // SystemStatus importálása
 import { DocumentType } from '../documents/document.entity';
 
 
@@ -54,8 +54,14 @@ async checkAndActivateSystem(systemId: number): Promise<void> {
     const hasUbsz = system.documents.some(doc => doc.type === DocumentType.UBSZ && doc.filepath);
 
     if (hasPermit && hasUbsz) {
-      system.status = 'Aktív';
+      system.status = SystemStatus.AKTIV; // <-- JAVÍTVA ENUM-RA
       await this.systemsRepository.save(system);
     }
 }
+  async updateStatus(id: number, status: SystemStatus): Promise<System> {
+    const system = await this.findOne(id);
+    // A findOne már kezeli a nem található esetet, így itt már nem kell
+    system.status = status;
+    return this.systemsRepository.save(system); // <-- JAVÍTVA 'systemsRepository'-re
+  }
 }

@@ -10,7 +10,8 @@ import { PersonalSecurityData } from '../personal-security-data/personal-securit
 import { Software } from '../software/software.entity';
 import { SystemAccess, AccessLevel } from '../system-access/system-access.entity';
 import { SystemPermit } from '../system-permits/system-permit.entity';
-import { System } from '../systems/system.entity';
+import { System, SystemStatus } from '../systems/system.entity'; // <-- SystemStatus IMPORTÁLÁSA
+
 
 @Injectable()
 export class TestDataSeeder {
@@ -87,7 +88,7 @@ export class TestDataSeeder {
       const systemEntity = this.systemRepo.create({
         systemname: sys.name,
         description: sys.desc,
-        status: 'Aktív',
+        status: SystemStatus.AKTIV, // <-- JAVÍTVA ENUM-RA
       });
       const savedSystem = await this.systemRepo.save(systemEntity);
 
@@ -100,6 +101,9 @@ export class TestDataSeeder {
         nato_classification: sys.classification?.type === ClassificationType.NATO ? sys.classification : null,
       });
       await this.permitRepo.save(permitEntity);
+      
+      // A savedSystem már a teljes entitás, hozzáadjuk a permitet a teljesség kedvéért
+      savedSystem.permit = permitEntity; 
       createdSystems.push(savedSystem);
     }
     return createdSystems;

@@ -7,7 +7,9 @@ import {
   deleteDocument,
   deleteHardware,
   // --- ÚJ IMPORT ---
-  getLocations 
+  getLocations,
+  updateSystemStatus
+
 } from '../services/api.service';
 // --- TÍPUSOK GLOBÁLIS IMPORTÁLÁSA ---
 import { System, Permit, Hardware, Document, Location } from '../types'; 
@@ -18,33 +20,38 @@ import { AddPermitForm } from './AddPermitForm';
 import { AssignFromLogisticsModal } from './AssignFromLogisticsModal';
 import { formatDate } from '../utils/date.utils';
 
+// Definiáljuk a státuszokat a frontend oldalon is
+const systemStatuses = ['Aktív', 'Fejlesztés alatt', 'Inaktív', 'Archivált'];
+
 interface SystemDetailProps {
   system: System;
   onBack: () => void;
 }
 
-export function SystemDetail({ system, onBack }: SystemDetailProps) {
+export function SystemDetail({ system: initialSystem, onBack }: SystemDetailProps) {
+  // A komponens belső állapotaként kezeljük a rendszert, hogy frissíthessük
+  const [system, setSystem] = useState<System>(initialSystem);
   const [permit, setPermit] = useState<Permit | null>(null);
   const [hardware, setHardware] = useState<Hardware[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]); // <-- ÚJ ÁLLAPOT
+  const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Modális ablakok állapotai
   const [showAddHardware, setShowAddHardware] = useState(false);
-  const [editingHardware, setEditingHardware] = useState<Hardware | null>(null); // <-- ÚJ SZERKESZTÉS ÁLLAPOT
+  const [editingHardware, setEditingHardware] = useState<Hardware | null>(null);
   const [showAddDocument, setShowAddDocument] = useState(false);
   const [selectedHardwareId, setSelectedHardwareId] = useState<number | null>(null);
   const [showAddPermit, setShowAddPermit] = useState(false);
   const [showAssignFromLogistics, setShowAssignFromLogistics] = useState(false);
 
-  const fetchData = async () => {
+    const fetchData = async () => {
     try {
       const [permitRes, hardwareRes, documentsRes, locationsRes] = await Promise.all([
         getPermitForSystem(system.systemid).catch(() => ({ data: null })),
         getHardwareForSystem(system.systemid),
         getDocumentsForSystem(system.systemid),
-        getLocations(), // <-- HELYSZÍNEK LEKÉRÉSE
+        getLocations(),
       ]);
       setPermit(permitRes.data);
       setHardware(hardwareRes.data);
@@ -61,6 +68,20 @@ export function SystemDetail({ system, onBack }: SystemDetailProps) {
     setLoading(true);
     fetchData();
   }, [system.systemid]);
+
+  // --- ÚJ FÜGGVÉNY a státusz változásának kezelésére ---
+  const handleStatusChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newStatus = event.target.value;
+    try {
+      const response = await updateSystemStatus(system.systemid, newStatus);
+      setSystem(response.data); // Frissítjük a komponens állapotát a backend válaszával
+      alert(`A(z) "${system.systemname}" rendszer státusza sikeresen módosítva lett!`);
+    } catch (error) {
+      alert('A státusz frissítése sikertelen.');
+      // Visszaállítjuk a legördülőt a régi értékre hiba esetén
+      event.target.value = system.status;
+    }
+  };
 
   // Egységes "onSuccess" handler a modális ablakoknak
   const handleModalSuccess = () => {
@@ -140,6 +161,23 @@ export function SystemDetail({ system, onBack }: SystemDetailProps) {
       <h2>{system.systemname} Részletes Adatai</h2>
       <p><strong>Leírás:</strong> {system.description}</p>
       
+      {/* --- ÚJ LEÖRDÜLŐ LISTA --- */}
+      <div style={{ margin: '1rem 0', maxWidth: '300px' }}>
+        <label htmlFor="status-select" style={{ display: 'block', marginBottom: '0.5rem' }}>
+          <strong>Rendszer státusza</strong>
+        </label>
+        <select 
+          id="status-select"
+          value={system.status} 
+          onChange={handleStatusChange}
+          style={{ width: '100%', padding: '8px' }}
+        >
+          {systemStatuses.map(status => (
+            <option key={status} value={status}>{status}</option>
+          ))}
+        </select>
+      </div>
+
       {/* --- Rendszerengedély és Dokumentumok Szekciók (változatlan) --- */}
       <hr />
       <h3>Rendszerengedély</h3>

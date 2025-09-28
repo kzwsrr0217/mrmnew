@@ -1,9 +1,10 @@
 // mrm-backend/src/systems/systems.controller.ts
 
-import { Controller, Get, Post, Body, Param, Delete, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Patch, NotFoundException } from '@nestjs/common';
 import { SystemsService } from './systems.service';
 import { System } from './system.entity';
 import { CreateSystemDto } from './dto/create-system.dto'; // <-- ÚJ IMPORT
+import { UpdateSystemStatusDto } from './dto/update-system-status.dto'; // Új import
 
 
 @Controller('systems')
@@ -32,5 +33,13 @@ export class SystemsController {
   @Delete(':id')
   remove(@Param('id') id: string): Promise<void> {
     return this.systemsService.remove(+id);
+  }
+
+    @Patch(':id/status') // EZ AZ ÚJ VÉGPONT
+  updateStatus(
+    @Param('id') id: string,
+    @Body() updateSystemStatusDto: UpdateSystemStatusDto,
+  ) {
+    return this.systemsService.updateStatus(+id, updateSystemStatusDto.status);
   }
 }

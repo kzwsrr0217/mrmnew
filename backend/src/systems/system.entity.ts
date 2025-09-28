@@ -13,6 +13,12 @@ import { SystemPermit } from '../system-permits/system-permit.entity';
 import { Hardware } from 'src/hardware/hardware.entity';
 import { Document } from '../documents/document.entity';
 
+export enum SystemStatus {
+  AKTIV = 'Aktív',
+  FEJLESZTES_ALATT = 'Fejlesztés alatt',
+  INAKTIV = 'Inaktív',
+  ARCHIVALT = 'Archivált',
+}
 
 @Entity('systems') // A tábla neve az adatbázisban: 'systems'
 export class System {
@@ -27,10 +33,10 @@ export class System {
 
   @Column({
     type: 'enum',
-    enum: ['Aktív', 'Fejlesztés alatt', 'Inaktív', 'Archivált'],
-    default: 'Fejlesztés alatt',
+    enum: SystemStatus, // Itt használjuk az enumot
+    default: SystemStatus.FEJLESZTES_ALATT,
   })
-  status: string;
+  status: SystemStatus; // A típus is legyen az enum
 
   @CreateDateColumn()
   created_at: Date;
