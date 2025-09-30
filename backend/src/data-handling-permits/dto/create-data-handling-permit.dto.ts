@@ -15,12 +15,14 @@ export class CreateDataHandlingPermitDto {
   @IsOptional()
   notes?: string;
 
-  @IsInt()
-  @IsNotEmpty()
-  locationId: number; // A helyszín ID-ja, amihez az engedély tartozik
+  // --- JAVÍTVA: locationId -> locationIds ---
+  @IsArray()
+  @IsInt({ each: true })
+  @IsNotEmpty({ message: 'Legalább egy helyszínt meg kell adni.' })
+  locationIds: number[]; // 'locationId'-ből 'locationIds' lett, és tömböt vár
 
   @IsArray()
   @IsInt({ each: true })
   @IsOptional()
-  classification_level_ids?: number[]; // A minősítési szintek ID-jai
+  classification_level_ids?: number[];
 }

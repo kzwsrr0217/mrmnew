@@ -1,6 +1,6 @@
 // mrmnew/frontend/src/pages/LocationsPage.tsx
 
-import { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect, FormEvent } from 'react';
 import { getLocations, createLocation, updateLocation, deleteLocation } from '../services/api.service';
 import { Location } from '../types';
 
@@ -19,6 +19,9 @@ export function LocationsPage() {
     room: '',
   });
 
+  // ÚJ: Állapot a lenyitott sor követésére
+  const [expandedLocationId, setExpandedLocationId] = useState<number | null>(null);
+
   const fetchLocations = async () => {
     setLoading(true);
     setError(null);
@@ -35,8 +38,13 @@ export function LocationsPage() {
   useEffect(() => {
     fetchLocations();
   }, []);
+  
+  const toggleDetails = (id: number) => {
+    setExpandedLocationId(prevId => (prevId === id ? null : id));
+  };
 
-  const openModalForCreate = () => {
+  // A többi formkezelő függvény (openModal, handleSubmit, etc.) VÁLTOZATLAN
+    const openModalForCreate = () => {
     setEditingLocation(null);
     setFormData({ zip_code: '', city: '', address: '', building: '', room: '' });
     setIsModalOpen(true);
@@ -48,7 +56,7 @@ export function LocationsPage() {
       zip_code: location.zip_code,
       city: location.city,
       address: location.address,
-      building: location.building || '', // Biztosítjuk, hogy ne legyen null
+      building: location.building || '',
       room: location.room,
     });
     setIsModalOpen(true);
@@ -66,9 +74,7 @@ export function LocationsPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // JAVÍTÁS: A 'full_address' generálását kivettük, a backend kezeli.
     const payload = formData;
-
     try {
       if (editingLocation) {
         await updateLocation(editingLocation.id, payload);
@@ -107,29 +113,53 @@ export function LocationsPage() {
         <thead>
           <tr>
             <th>Teljes cím</th>
-            <th>Irányítószám</th>
-            <th>Város</th>
             <th>Épület/Helyiség</th>
+            <th>Hardverek száma</th>
             <th>Műveletek</th>
           </tr>
         </thead>
         <tbody>
           {locations.map(loc => (
-            <tr key={loc.id}>
-              <td>{loc.full_address}</td>
-              <td>{loc.zip_code}</td>
-              <td>{loc.city}</td>
-              <td>{`${loc.building || ''} ${loc.room}`}</td>
-              <td>
-                <button onClick={() => openModalForEdit(loc)} style={{ marginRight: '8px' }}>Szerkesztés</button>
-                <button onClick={() => handleDelete(loc.id)} style={{ backgroundColor: '#dc3545' }}>Törlés</button>
-              </td>
-            </tr>
+            <React.Fragment key={loc.id}>
+              <tr>
+                <td>{loc.full_address}</td>
+                <td>{`${loc.building || ''} ${loc.room}`}</td>
+                <td>{loc.hardware?.length || 0} db</td>
+                <td>
+                  <button onClick={() => toggleDetails(loc.id)} style={{ marginRight: '8px' }}>
+                    {expandedLocationId === loc.id ? 'Bezár' : 'Részletek'}
+                  </button>
+                  <button onClick={() => openModalForEdit(loc)} style={{ marginRight: '8px' }}>Szerkesztés</button>
+                  <button onClick={() => handleDelete(loc.id)} style={{ backgroundColor: '#dc3545' }}>Törlés</button>
+                </td>
+              </tr>
+              {expandedLocationId === loc.id && (
+                <tr className="details-row">
+                  <td colSpan={4}>
+                    <div className="details-content">
+                      <h5>Hardverek ebben a helyiségben:</h5>
+                      {loc.hardware && loc.hardware.length > 0 ? (
+                        <ul>
+                          {loc.hardware.map(hw => (
+                            <li key={hw.hardware_id}>
+                              <strong>{hw.type}:</strong> {hw.model_name} (S/N: {hw.serial_number})
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>Nincs hardver rögzítve ebben a helyiségben.</p>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </React.Fragment>
           ))}
         </tbody>
       </table>
 
-      {isModalOpen && (
+      {/* A modális ablak (form) VÁLTOZATLAN */}
+       {isModalOpen && (
         <div className="modal-backdrop">
           <div className="modal-content">
             <h2>{editingLocation ? 'Helyszín szerkesztése' : 'Új helyszín'}</h2>

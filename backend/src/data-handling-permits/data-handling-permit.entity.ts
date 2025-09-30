@@ -2,7 +2,7 @@
 
 import { ClassificationLevel } from '../classifications/classification.entity';
 import { Location } from '../locations/location.entity';
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable } from 'typeorm'; // OneToOne és JoinColumn törölve, OneToMany hozzáadva
 
 export enum SecurityClass {
   FIRST_CLASS = 'Első Osztály',
@@ -23,15 +23,18 @@ export class DataHandlingPermit {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @OneToOne(() => Location, location => location.data_handling_permit, { cascade: true })
-  @JoinColumn()
-  location: Location;
+  // --- JAVÍTVA: OneToOne -> OneToMany ---
+  @OneToMany(() => Location, location => location.dataHandlingPermit)
+  locations: Location[]; // 'location'-ből 'locations' lett, és tömböt jelöl
 
   @ManyToMany(() => ClassificationLevel, { eager: true, cascade: true })
-  @JoinTable()
+  @JoinTable({
+      name: 'permit_classifications',
+      joinColumn: { name: 'permit_id', referencedColumnName: 'id' },
+      inverseJoinColumn: { name: 'classification_id', referencedColumnName: 'id' },
+  })
   classification_levels: ClassificationLevel[];
 
-  // --- ÚJ MEZŐK A FÁJLFELTÖLTÉSHEZ ---
   @Column({ nullable: true })
   file_path: string;
 

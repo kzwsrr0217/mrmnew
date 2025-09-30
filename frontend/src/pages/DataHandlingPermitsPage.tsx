@@ -17,7 +17,7 @@ export function DataHandlingPermitsPage() {
   const initialFormData = {
     registration_number: '',
     security_class: SecurityClass.SECOND_CLASS,
-    locationId: '',
+    locationIds: [] as number[], // JAVÍTVA: locationId -> locationIds
     classification_level_ids: [] as number[],
     notes: '',
   };
@@ -55,7 +55,7 @@ export function DataHandlingPermitsPage() {
     setFormData({
       registration_number: permit.registration_number,
       security_class: permit.security_class,
-      locationId: permit.location.id.toString(),
+      locationIds: permit.locations.map(loc => loc.id), // JAVÍTVA
       classification_level_ids: permit.classification_levels.map(c => c.id),
       notes: permit.notes || '',
     });
@@ -69,10 +69,12 @@ export function DataHandlingPermitsPage() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-
+  
+  // Külön függvény a több-választós mezők kezelésére
   const handleMultiSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name } = e.target;
     const values = Array.from(e.target.selectedOptions, option => Number(option.value));
-    setFormData(prev => ({...prev, classification_level_ids: values}));
+    setFormData(prev => ({...prev, [name]: values}));
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,11 +83,7 @@ export function DataHandlingPermitsPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
-    const payload = {
-      ...formData,
-      locationId: Number(formData.locationId)
-    };
+    const payload = { ...formData }; // A DTO már a helyes formátumot várja
     
     try {
       let savedPermit: DataHandlingPermit;
@@ -120,10 +118,13 @@ export function DataHandlingPermitsPage() {
       }
     }
   };
-
+  
+  // JAVÍTVA: Az összes már engedélyhez rendelt helyszín ID-jának összegyűjtése
+  const assignedLocationIds = new Set(permits.flatMap(p => p.locations.map(l => l.id)));
+  
   const availableLocations = locations.filter(loc => 
-      !permits.some(p => p.location.id === loc.id) || 
-      (editingPermit && editingPermit.location.id === loc.id)
+      !assignedLocationIds.has(loc.id) || // Szabad helyszínek
+      (editingPermit && editingPermit.locations.some(l => l.id === loc.id)) // Vagy a jelenleg szerkesztett engedélyhez tartozók
   );
 
   if (loading) return <p>Betöltés...</p>;
@@ -140,7 +141,7 @@ export function DataHandlingPermitsPage() {
         <thead>
           <tr>
             <th>Nyilv. szám</th>
-            <th>Helyszín</th>
+            <th>Helyszín(ek)</th>
             <th>Biztonsági osztály</th>
             <th>Minősítési szintek</th>
             <th>Dokumentum</th>
@@ -151,14 +152,13 @@ export function DataHandlingPermitsPage() {
           {permits.map(permit => (
             <tr key={permit.id}>
               <td>{permit.registration_number}</td>
-              <td>{permit.location?.full_address || 'N/A'}</td>
+              {/* JAVÍTVA: Több helyszín megjelenítése */}
+              <td>{permit.locations?.map(l => l.room).join(', ') || 'N/A'}</td>
               <td>{permit.security_class}</td>
               <td>{permit.classification_levels.map(c => c.level_name).join(', ')}</td>
               <td>
                 {permit.original_filename && (
-                  <a href={`http://localhost:3000/data-handling-permits/${permit.id}/download`} target="_blank" rel="noopener noreferrer">
-                    Letöltés
-                  </a>
+                  <a href={`http://localhost:3000/data-handling-permits/${permit.id}/download`} target="_blank" rel="noopener noreferrer">Letöltés</a>
                 )}
               </td>
               <td>
@@ -183,9 +183,9 @@ export function DataHandlingPermitsPage() {
                   <option value={SecurityClass.SECOND_CLASS}>Másod Osztály</option>
                 </select>
                 
-                <label>Helyszín *</label>
-                <select name="locationId" value={formData.locationId} onChange={handleFormChange} required>
-                  <option value="">-- Válasszon egy szabad helyszínt --</option>
+                {/* JAVÍTVA: Több-választós (multiple) select mező a helyszíneknek */}
+                <label>Helyszín(ek) *</label>
+                <select name="locationIds" value={formData.locationIds.map(String)} onChange={handleMultiSelectChange} multiple required style={{height: '150px'}}>
                   {availableLocations.map(loc => <option key={loc.id} value={loc.id}>{loc.full_address}</option>)}
                 </select>
 

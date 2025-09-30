@@ -12,29 +12,31 @@ export class LocationsService {
     private locationsRepository: Repository<Location>,
   ) {}
 
-  // JAVÍTVA: Hiányzó 'create' metódus hozzáadása
-  create(createLocationDto: Omit<Location, 'id'>): Promise<Location> {
+  create(createLocationDto: Partial<Omit<Location, 'id' | 'full_address'>>): Promise<Location> {
     const location = this.locationsRepository.create(createLocationDto);
     return this.locationsRepository.save(location);
   }
 
-  // JAVÍTVA: Hiányzó 'findAll' metódus hozzáadása
+  // --- JAVÍTVA: A 'hardware' reláció betöltése ---
   findAll(): Promise<Location[]> {
-    return this.locationsRepository.find();
+    return this.locationsRepository.find({
+      relations: ['hardware'], // Ez a sor tölti be a kapcsolódó hardvereket
+    });
   }
 
-  // JAVÍTVA: Hiányzó 'findOne' metódus hozzáadása
   findOne(id: number): Promise<Location> {
-    return this.locationsRepository.findOneBy({ id });
+    return this.locationsRepository.findOne({ 
+        where: { id },
+        relations: ['hardware'], // A részletes nézethez is hozzáadjuk
+    });
   }
 
-  // JAVÍTVA: Hiányzó 'update' metódus hozzáadása
-  async update(id: number, updateLocationDto: Partial<Omit<Location, 'id'>>): Promise<Location> {
+  async update(id: number, updateLocationDto: Partial<Omit<Location, 'id' | 'full_address'>>): Promise<Location> {
+    // A 'findOne' már tartalmazza a relációkat, így a visszatérési érték teljes lesz.
     await this.locationsRepository.update(id, updateLocationDto);
     return this.findOne(id);
   }
 
-  // JAVÍTVA: Hiányzó 'remove' metódus hozzáadása
   async remove(id: number): Promise<void> {
     await this.locationsRepository.delete(id);
   }

@@ -20,11 +20,11 @@ export class DataHandlingPermitsService {
   ) {}
 
   async create(createDto: CreateDataHandlingPermitDto): Promise<DataHandlingPermit> {
-    const { locationId, classification_level_ids, ...permitData } = createDto;
+    const { locationIds, classification_level_ids, ...permitData } = createDto;
 
-    const location = await this.locationRepository.findOneBy({ id: locationId });
-    if (!location) {
-      throw new NotFoundException(`A helyszín nem található: ${locationId}`);
+    const locations = await this.locationRepository.findBy({ id: In(locationIds) });
+    if (locations.length !== locationIds.length) {
+      throw new NotFoundException(`Egy vagy több helyszín nem található.`);
     }
 
     let classificationLevels = [];
@@ -34,7 +34,7 @@ export class DataHandlingPermitsService {
 
     const newPermit = this.permitRepository.create({
       ...permitData,
-      location,
+      locations, // Itt adjuk át a megtalált helyszínek tömbjét
       classification_levels: classificationLevels,
     });
 
@@ -42,13 +42,15 @@ export class DataHandlingPermitsService {
   }
 
   findAll(): Promise<DataHandlingPermit[]> {
-    return this.permitRepository.find({ relations: ['location', 'classification_levels'] });
+    // JAVÍTVA: a reláció neve 'locations' lett
+    return this.permitRepository.find({ relations: ['locations', 'classification_levels'] });
   }
 
   async findOne(id: number): Promise<DataHandlingPermit> {
     const permit = await this.permitRepository.findOne({
       where: { id },
-      relations: ['location', 'classification_levels'],
+      // JAVÍTVA: a reláció neve 'locations' lett
+      relations: ['locations', 'classification_levels'],
     });
     if (!permit) {
       throw new NotFoundException(`Az engedély nem található: ${id}`);
@@ -57,16 +59,15 @@ export class DataHandlingPermitsService {
   }
 
   async update(id: number, updateDto: UpdateDataHandlingPermitDto): Promise<DataHandlingPermit> {
-    const { locationId, classification_level_ids, ...permitData } = updateDto;
-    const permit = await this.findOne(id); // Meglévő engedély betöltése
+    const { locationIds, classification_level_ids, ...permitData } = updateDto;
+    const permit = await this.findOne(id);
 
-    // Alapadatok frissítése
     Object.assign(permit, permitData);
 
-    if (locationId) {
-      const location = await this.locationRepository.findOneBy({ id: locationId });
-      if (!location) throw new NotFoundException(`A helyszín nem található: ${locationId}`);
-      permit.location = location;
+    if (locationIds) {
+      const locations = await this.locationRepository.findBy({ id: In(locationIds) });
+      if (locations.length !== locationIds.length) throw new NotFoundException(`Egy vagy több helyszín nem található.`);
+      permit.locations = locations;
     }
 
     if (classification_level_ids) {
