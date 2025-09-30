@@ -244,6 +244,11 @@ export const getDashboardStats = () => {
   return apiClient.get('/dashboard/stats');
 };
 
+// --- ÚJ FÜGGVÉNY ---
+export const getTicketsByStatus = () => {
+    return apiClient.get('/dashboard/tickets-by-status');
+}
+
 export const runSeeder = () => {
   return apiClient.post('/seeder/run');
 };

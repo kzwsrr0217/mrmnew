@@ -30,4 +30,18 @@ export class DashboardService {
       openTickets,
     };
   }
+
+  async getTicketsByStatus() {
+    const statusCounts = await this.ticketRepo.createQueryBuilder("ticket")
+      .select("ticket.status", "status")
+      // --- JAVÍTVA: ticket.id -> ticket.ticket_id ---
+      .addSelect("COUNT(ticket.ticket_id)", "count")
+      .groupBy("ticket.status")
+      .getRawMany();
+      
+    return statusCounts.map(item => ({
+        status: item.status,
+        count: parseInt(item.count, 10),
+    }));
+  }
 }

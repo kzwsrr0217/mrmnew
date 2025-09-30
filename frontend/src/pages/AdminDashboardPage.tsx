@@ -1,7 +1,12 @@
 // mrmnew/frontend/src/pages/AdminDashboardPage.tsx
 
 import { useState, useEffect } from 'react';
-import { getDashboardStats, runSeeder } from '../services/api.service';
+import { getDashboardStats, runSeeder, getTicketsByStatus } from '../services/api.service';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Doughnut } from 'react-chartjs-2';
+import { TicketStatus } from '../types';
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface Stats {
   userCount: number;
@@ -10,24 +15,37 @@ interface Stats {
   openTickets: number;
 }
 
+interface TicketStatusData {
+    status: TicketStatus;
+    count: number;
+}
+
 export function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [ticketStatusData, setTicketStatusData] = useState<TicketStatusData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDashboardStats()
-      .then(res => setStats(res.data))
-      .finally(() => setLoading(false));
+    Promise.all([
+        getDashboardStats(),
+        getTicketsByStatus()
+    ])
+    .then(([statsRes, ticketsRes]) => {
+        setStats(statsRes.data);
+        setTicketStatusData(ticketsRes.data);
+    })
+    .catch(err => console.error("Hiba a műszerfal adatok lekérésekor:", err))
+    .finally(() => setLoading(false));
   }, []);
 
   const handleRunSeeder = async () => {
-    if (!window.confirm('Biztosan újra akarja futtatni a tesztadat-feltöltőt? Ez duplikálhatja az adatokat, ha az adatbázis nem üres.')) return;
+    if (!window.confirm('Biztosan újra akarja futtatni a tesztadat-feltöltőt?')) return;
     try {
-        await runSeeder();
-        alert('A tesztadat-feltöltő sikeresen lefutott.');
-        window.location.reload(); // Oldal újratöltése az új adatokért
+      await runSeeder();
+      alert('A tesztadat-feltöltő sikeresen lefutott.');
+      window.location.reload();
     } catch(err) {
-        alert('A feltöltő futtatása sikertelen.');
+      alert('A feltöltő futtatása sikertelen.');
     }
   }
 
@@ -38,13 +56,35 @@ export function AdminDashboardPage() {
       <h3>Rendszerstatisztikák</h3>
       {loading && <p>Statisztikák betöltése...</p>}
       {stats && (
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <StatCard title="Regisztrált felhasználók" value={stats.userCount} />
-            <StatCard title="Nyilvántartott rendszerek" value={stats.systemCount} />
-            <StatCard title="Összes feladat" value={stats.totalTickets} />
-            <StatCard title="Nyitott feladatok" value={stats.openTickets} />
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
+          <StatCard title="Regisztrált felhasználók" value={stats.userCount} />
+          <StatCard title="Nyilvántartott rendszerek" value={stats.systemCount} />
+          <StatCard title="Összes feladat" value={stats.totalTickets} />
+          <StatCard title="Nyitott feladatok" value={stats.openTickets} />
         </div>
       )}
+
+      <h3>Vizuális Jelentések</h3>
+      <div style={{ display: 'flex', gap: '2rem' }}>
+        {/* --- JAVÍTOTT GRAFIKON KONTÉNER --- */}
+        <div style={{
+            width: '400px',
+            height: '400px',
+            padding: '1rem',
+            border: '1px solid #ccc',
+            borderRadius: '8px',
+            display: 'flex', // Flexbox konténer
+            flexDirection: 'column' // Függőleges elrendezés
+        }}>
+            <h4 style={{ flexShrink: 0 }}>Feladatok állapot szerint</h4> {/* Cím, ami nem zsugorodik */}
+            {ticketStatusData.length > 0 ? (
+                <TicketsByStatusChart data={ticketStatusData} />
+            ) : (
+                !loading && <p>Nincs adat a grafikonhoz.</p>
+            )}
+        </div>
+        {/* Ide jöhetnek majd a további grafikonok... */}
+      </div>
 
       <hr style={{ margin: '2rem 0' }}/>
 
@@ -57,7 +97,43 @@ export function AdminDashboardPage() {
   );
 }
 
-// Egy egyszerű segédkomponens a statisztikák megjelenítéséhez
+// --- VÉGLEGES, JAVÍTOTT GRAFIKON KOMPONENS ---
+function TicketsByStatusChart({ data }: { data: TicketStatusData[] }) {
+    const chartData = {
+        labels: data.map(d => d.status),
+        datasets: [{
+            label: 'Feladatok száma',
+            data: data.map(d => d.count),
+            backgroundColor: [
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(255, 99, 132, 0.7)',
+            ],
+            borderColor: ['#fff'],
+            borderWidth: 2,
+        }]
+    };
+
+    const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom' as const,
+            },
+        },
+    };
+
+    // Ez a div most már a flexbox-on belül a maradék helyet fogja kitölteni
+    return (
+        <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
+            <Doughnut data={chartData} options={options} />
+        </div>
+    );
+}
+
+// A StatCard segédkomponens változatlan
 function StatCard({ title, value }: { title: string, value: number }) {
     return (
         <div style={{ border: '1px solid #ccc', padding: '1rem', borderRadius: '8px', minWidth: '200px', textAlign: 'center' }}>
