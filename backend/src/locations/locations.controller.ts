@@ -1,4 +1,35 @@
-import { Controller } from '@nestjs/common';
+// mrmnew/backend/src/locations/locations.controller.ts
 
-@Controller('locations')
-export class LocationsController {}
+import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { LocationsService } from './locations.service';
+import { Location } from './location.entity'; // Importáljuk a típust
+
+@Controller('locations') // Biztosítjuk a helyes útvonalat
+export class LocationsController {
+  constructor(private readonly locationsService: LocationsService) {}
+
+  @Post()
+  create(@Body() createLocationDto: Omit<Location, 'id'>) {
+    return this.locationsService.create(createLocationDto);
+  }
+
+  @Get()
+  findAll() {
+    return this.locationsService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.locationsService.findOne(+id);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateLocationDto: Partial<Omit<Location, 'id'>>) {
+    return this.locationsService.update(+id, updateLocationDto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.locationsService.remove(+id);
+  }
+}

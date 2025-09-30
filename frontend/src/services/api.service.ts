@@ -86,7 +86,9 @@ export const getSystems = () => {
 export const createSystem = (data: { systemname: string, description: string }) => {
   return apiClient.post('/systems', data);
 };
-
+export const updateSystemStatus = (id: number, status: string) => {
+  return apiClient.patch(`/systems/${id}/status`, { status });
+};
 // --- Rendszerengedély (SystemPermits) végpontok ---
 export const getPermitForSystem = (systemId: number) => {
   return apiClient.get(`/system-permits/by-system/${systemId}`);
@@ -171,7 +173,7 @@ export const getStockItems = () => {
   return apiClient.get('/logistics/items/stock');
 };
 
-export const assignLogisticsItem = (data: { itemId: number; systemId: number; type: string; notes?: string; }) => {
+export const assignLogisticsItem = (data: any) => { // 'any' a rugalmasságért, de lehetne egy specifikus interface is
   return apiClient.post('/logistics/assign', data);
 };
 

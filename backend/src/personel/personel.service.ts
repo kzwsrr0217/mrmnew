@@ -1,6 +1,4 @@
-// mrmnew/backend/src/personel/personel.service.ts
-
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Personel } from './personel.entity';
 import { Repository } from 'typeorm';
@@ -17,6 +15,7 @@ export class PersonelService {
     @InjectRepository(ClassificationLevel) private classificationRepo: Repository<ClassificationLevel>,
   ) {}
 
+  // --- A create, findAll, findOne, update metódusok VÁLTOZATLANOK ---
   async create(dto: CreatePersonelDto): Promise<Personel> {
     const psd = this.psdRepo.create(dto.personal_security_data);
 
@@ -51,9 +50,9 @@ export class PersonelService {
   }
 
   async findOne(id: number): Promise<Personel> {
-    const personel = await this.personelRepo.findOne({ // JAVÍTVA: findOne-ra cserélve
+    const personel = await this.personelRepo.findOne({
       where: { personel_id: id },
-      relations: { // És a relációk itt is betöltésre kerülnek
+      relations: {
         personal_security_data: {
           nemzeti_szint: true,
           nato_szint: true,
@@ -78,7 +77,6 @@ export class PersonelService {
       const psdDto = dto.personal_security_data;
       const psd = personel.personal_security_data;
 
-      // Manually assign properties to avoid issues with Object.assign
       if (psdDto.beosztas) psd.beosztas = psdDto.beosztas;
       if (psdDto.rendfokozat) psd.rendfokozat = psdDto.rendfokozat;
       if (psdDto.titoktartasi_szam) psd.titoktartasi_szam = psdDto.titoktartasi_szam;
@@ -109,11 +107,19 @@ export class PersonelService {
     return this.personelRepo.save(personel);
   }
 
-
+  // --- EZ A FÜGGVÉNY MÓDOSULT ---
   async remove(id: number): Promise<void> {
-    const result = await this.personelRepo.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`A(z) ${id} azonosítójú személy nem található.`);
+    try {
+      const result = await this.personelRepo.delete(id);
+      if (result.affected === 0) {
+        throw new NotFoundException(`A(z) ${id} azonosítójú személy nem található.`);
+      }
+    } catch (error) {
+      if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        throw new ConflictException('A személy nem törölhető, mert még rendelkezik aktív rendszerhozzáféréssel.');
+      }
+      // Dobja tovább az egyéb, nem várt hibákat
+      throw error;
     }
   }
 }

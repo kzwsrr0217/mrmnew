@@ -9,6 +9,7 @@ import { LogisticsHandover } from './entities/logistics-handover.entity';
 import { LogisticsSeeder } from './logistics.seeder';
 import { Hardware } from 'src/hardware/hardware.entity'; // <-- ÚJ IMPORT
 import { System } from 'src/systems/system.entity';     // <-- ÚJ IMPORT
+import { ClassificationLevel } from '../classifications/classification.entity'; // JAVÍTÁS: Importálás
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { System } from 'src/systems/system.entity';     // <-- ÚJ IMPORT
       LogisticsItem, 
       LogisticsHandover,
       Hardware, // <-- EZT A SORT ADD HOZZÁ
-      System,   // <-- EZT A SORT ADD HOZZÁ
+      System,
+      ClassificationLevel,   // <-- EZT A SORT ADD HOZZÁ
     ]),
   ],
   controllers: [LogisticsController],

@@ -4,10 +4,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Hardware, HardwareType } from 'src/hardware/hardware.entity';
 import { System } from 'src/systems/system.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { LogisticsItem, LogisticsItemStatus } from './entities/logistics-item.entity';
 import { CreateLogisticsItemDto } from './dto/create-logistics-item.dto';
 import { AssignLogisticsItemDto } from './dto/assign-logistics-item.dto';
+import { ClassificationLevel } from 'src/classifications/classification.entity'; // Szükséges import
 
 @Injectable()
 export class LogisticsService {
@@ -15,6 +16,8 @@ export class LogisticsService {
         @InjectRepository(LogisticsItem) private itemRepo: Repository<LogisticsItem>,
         @InjectRepository(Hardware) private hardwareRepo: Repository<Hardware>,
         @InjectRepository(System) private systemRepo: Repository<System>,
+        @InjectRepository(ClassificationLevel) private classificationRepo: Repository<ClassificationLevel>,
+
     ) {}
 
     /**
@@ -49,30 +52,49 @@ export class LogisticsService {
     /**
      * JAVÍTOTT METÓDUS: Egy logisztikai tételt hozzárendel egy rendszerhez a DTO adatai alapján.
      */
+    /**
+     * JAVÍTOTT METÓDUS: Létrehoz egy teljes értékű hardver entitást a logisztikai tételből,
+     * majd hozzárendeli a rendszerhez és frissíti a logisztikai státuszt.
+     */
     async assignItemToSystem(dto: AssignLogisticsItemDto): Promise<Hardware> {
-        const item = await this.itemRepo.findOneBy({ id: dto.itemId });
+        const { itemId, systemId, parent_hardware_id, classification_ids, ...hardwareData } = dto;
+
+        const item = await this.itemRepo.findOneBy({ id: itemId });
         if (!item || item.status !== LogisticsItemStatus.RAKTARON) {
             throw new NotFoundException('A tétel nem található vagy már ki van adva.');
         }
 
-        const system = await this.systemRepo.findOneBy({ systemid: dto.systemId });
+        const system = await this.systemRepo.findOneBy({ systemid: systemId });
         if (!system) {
             throw new NotFoundException('A célrendszer nem található.');
         }
 
-        const newHardware = this.hardwareRepo.create({
-            model_name: item.name,          // Név -> Modell
-            serial_number: item.serial_number, // Gyári szám -> Sorozatszám
-            type: dto.type,                 // A felhasználó által választott típus
-            notes: dto.notes,               // A felhasználó által írt megjegyzés
-            system: system,
-        });
+        // 1. Új hardver entitás létrehozása a DTO-ból
+        const newHardware = this.hardwareRepo.create(hardwareData);
+        newHardware.system = system;
+
+        // Szülő és minősítések kezelése (a hardware.service logikájából átemelve)
+        if (parent_hardware_id) {
+            const parent = await this.hardwareRepo.findOneBy({ hardware_id: parent_hardware_id });
+            if (!parent) throw new NotFoundException('A szülő hardver nem található.');
+            newHardware.parent_hardware = parent;
+        }
+
+        if (classification_ids && classification_ids.length > 0) {
+            const classifications = await this.classificationRepo.findBy({ classification_id: In(classification_ids) });
+            if (classifications.length !== classification_ids.length) throw new NotFoundException('Egy vagy több minősítés nem található.');
+            newHardware.classifications = classifications;
+        }
+        
+        // 2. Új hardver mentése az adatbázisba
         const savedHardware = await this.hardwareRepo.save(newHardware);
 
+        // 3. Eredeti logisztikai tétel státuszának frissítése
         item.status = LogisticsItemStatus.KIADVA;
-        item.assigned_hardware = savedHardware;
+        item.assigned_hardware = savedHardware; // Összekapcsoljuk az új hardverrel
         await this.itemRepo.save(item);
 
         return savedHardware;
     }
+
 }

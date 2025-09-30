@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getPendingRequests, approveRequest, rejectRequest } from '../services/api.service';
-import { AccessRequest, RequestStatus } from '../types'; // UserRole importálása
+import { AccessRequest, RequestStatus, UserRole } from '../types'; // UserRole importálása
 import { useAuth } from '../auth/AuthContext';
 import { formatDate } from '../utils/date.utils';
 
