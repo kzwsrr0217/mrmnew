@@ -1,4 +1,4 @@
-// src/pages/LocationsPage.tsx
+// mrmnew/frontend/src/pages/LocationsPage.tsx
 
 import { useState, useEffect, FormEvent } from 'react';
 import { getLocations, createLocation, updateLocation, deleteLocation } from '../services/api.service';
@@ -9,7 +9,6 @@ export function LocationsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Az űrlap és a modális ablak állapotai
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [formData, setFormData] = useState({
@@ -49,7 +48,7 @@ export function LocationsPage() {
       zip_code: location.zip_code,
       city: location.city,
       address: location.address,
-      building: location.building,
+      building: location.building || '', // Biztosítjuk, hogy ne legyen null
       room: location.room,
     });
     setIsModalOpen(true);
@@ -67,8 +66,8 @@ export function LocationsPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const full_address = `${formData.zip_code} ${formData.city}, ${formData.address} ${formData.building} ${formData.room}`;
-    const payload = { ...formData, full_address };
+    // JAVÍTÁS: A 'full_address' generálását kivettük, a backend kezeli.
+    const payload = formData;
 
     try {
       if (editingLocation) {
@@ -77,8 +76,8 @@ export function LocationsPage() {
         await createLocation(payload);
       }
       closeModal();
-      fetchLocations(); // Frissítjük a listát
-    } catch (err) {
+      fetchLocations();
+    } catch (err: any) {
       alert(`Hiba történt: ${err.response?.data?.message || 'Ismeretlen hiba'}`);
     }
   };
@@ -110,9 +109,7 @@ export function LocationsPage() {
             <th>Teljes cím</th>
             <th>Irányítószám</th>
             <th>Város</th>
-            <th>Cím</th>
-            <th>Épület</th>
-            <th>Helyiség</th>
+            <th>Épület/Helyiség</th>
             <th>Műveletek</th>
           </tr>
         </thead>
@@ -122,9 +119,7 @@ export function LocationsPage() {
               <td>{loc.full_address}</td>
               <td>{loc.zip_code}</td>
               <td>{loc.city}</td>
-              <td>{loc.address}</td>
-              <td>{loc.building}</td>
-              <td>{loc.room}</td>
+              <td>{`${loc.building || ''} ${loc.room}`}</td>
               <td>
                 <button onClick={() => openModalForEdit(loc)} style={{ marginRight: '8px' }}>Szerkesztés</button>
                 <button onClick={() => handleDelete(loc.id)} style={{ backgroundColor: '#dc3545' }}>Törlés</button>
@@ -140,15 +135,15 @@ export function LocationsPage() {
             <h2>{editingLocation ? 'Helyszín szerkesztése' : 'Új helyszín'}</h2>
             <form onSubmit={handleSubmit}>
               <div className="form-grid">
-                <label>Irányítószám</label><input name="zip_code" value={formData.zip_code} onChange={handleFormChange} required />
-                <label>Város</label><input name="city" value={formData.city} onChange={handleFormChange} required />
-                <label>Cím</label><input name="address" value={formData.address} onChange={handleFormChange} required />
+                <label>Irányítószám *</label><input name="zip_code" value={formData.zip_code} onChange={handleFormChange} required />
+                <label>Város *</label><input name="city" value={formData.city} onChange={handleFormChange} required />
+                <label>Cím *</label><input name="address" value={formData.address} onChange={handleFormChange} required />
                 <label>Épület</label><input name="building" value={formData.building} onChange={handleFormChange} />
-                <label>Helyiség</label><input name="room" value={formData.room} onChange={handleFormChange} required />
+                <label>Helyiség *</label><input name="room" value={formData.room} onChange={handleFormChange} required />
               </div>
-              <div style={{ marginTop: '1rem' }}>
+              <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+                <button type="button" onClick={closeModal} style={{ marginRight: '8px' }}>Mégse</button>
                 <button type="submit">Mentés</button>
-                <button type="button" onClick={closeModal} style={{ marginLeft: '8px' }}>Mégse</button>
               </div>
             </form>
           </div>

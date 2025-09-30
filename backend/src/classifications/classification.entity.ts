@@ -1,6 +1,8 @@
-// mrm-backend/src/classifications/classification.entity.ts
+// mrmnew/backend/src/classifications/classification.entity.ts
 
-import { Entity, PrimaryGeneratedColumn, Column, Unique } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, Unique, ManyToMany } from 'typeorm';
+import { DataHandlingPermit } from '../data-handling-permits/data-handling-permit.entity';
+
 
 export enum ClassificationType {
   NEMZETI = 'NEMZETI',
@@ -12,7 +14,7 @@ export enum ClassificationType {
 @Unique(['type', 'level_name'])
 export class ClassificationLevel {
   @PrimaryGeneratedColumn()
-  classification_id: number;
+  id: number; // Javaslat: átnevezés 'classification_id'-ről
 
   @Column({
     type: 'enum',
@@ -24,6 +26,9 @@ export class ClassificationLevel {
   level_name: string;
 
   @Column({ type: 'int' })
-  rank: number; 
-  // A @ManyToMany kapcsolatot innen teljesen töröltük.
+  rank: number;
+
+  // A kapcsolat másik oldalának definiálása a helyes működéshez
+  @ManyToMany(() => DataHandlingPermit, permit => permit.classification_levels)
+  permits: DataHandlingPermit[];
 }

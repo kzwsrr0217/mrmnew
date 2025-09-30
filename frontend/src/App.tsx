@@ -21,6 +21,7 @@ import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { LogisticsPage } from './pages/LogisticsPage';
 import { LocationsPage } from './pages/LocationsPage';
 import { DataHandlingPermitsPage } from './pages/DataHandlingPermitsPage';
+import { ClassificationsPage } from './pages/ClassificationsPage';
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
         <Route path="/admin/dashboard" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><AdminDashboardPage /></MainLayout></ProtectedRoute>} />
         <Route path="/admin/locations" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><LocationsPage /></MainLayout></ProtectedRoute>} />
         <Route path="/admin/permits" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><DataHandlingPermitsPage /></MainLayout></ProtectedRoute>} />
+        <Route path="/admin/classifications" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><ClassificationsPage /></MainLayout></ProtectedRoute>} />
       </Routes>
     </AuthProvider>
   );

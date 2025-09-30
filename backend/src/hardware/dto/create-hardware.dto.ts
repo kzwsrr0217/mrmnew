@@ -28,16 +28,17 @@ export class CreateHardwareDto {
   @IsNotEmpty()
   system_id: number;
 
+  // JAVÍTVA: locationId -> location
   @IsInt()
   @IsOptional()
-  locationId?: number;
+  location?: number; 
 
   @IsBoolean()
   @IsOptional()
   is_tempest?: boolean;
 
   @IsEnum(TempestLevel)
-  @ValidateIf(o => o.is_tempest === true) // Csak akkor validálja, ha a tempest jelölő be van pipálva
+  @ValidateIf(o => o.is_tempest === true)
   @IsNotEmpty({ message: 'A TEMPEST szint megadása kötelező, ha az eszköz minősített.' })
   tempest_level?: TempestLevel;
 
@@ -50,10 +51,7 @@ export class CreateHardwareDto {
   @IsOptional()
   tempest_number?: string;
   
-  // --- Típus-specifikus validációk ---
-
   @IsEnum(WorkstationType)
-  // JAVÍTÁS: Csak akkor kötelező, ha a típus MUNKAALLOMAS
   @ValidateIf(o => o.type === HardwareType.MUNKAALLOMAS)
   @IsNotEmpty({ message: 'A munkaállomás jellegének megadása kötelező.' })
   workstation_type?: WorkstationType;
@@ -63,7 +61,6 @@ export class CreateHardwareDto {
   inventory_number?: string;
   
   @IsInt({ message: 'A méretnek egész számnak kell lennie.' })
-  // JAVÍTÁS: Csak akkor validálja, ha a típus ADATTAROLO és a mező ki van töltve
   @ValidateIf(o => o.type === HardwareType.ADATTAROLO)
   @IsOptional()
   storage_size_gb?: number;

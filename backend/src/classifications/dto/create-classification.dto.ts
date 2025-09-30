@@ -1,5 +1,5 @@
-// mrm-backend/src/classifications/dto/create-classification.dto.ts
-import { IsEnum, IsNotEmpty, IsString, MaxLength, IsInt } from 'class-validator';
+// mrmnew/backend/src/classifications/dto/create-classification.dto.ts
+import { IsString, IsNotEmpty, IsEnum, IsInt } from 'class-validator';
 import { ClassificationType } from '../classification.entity';
 
 export class CreateClassificationDto {
@@ -9,7 +9,6 @@ export class CreateClassificationDto {
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(100)
   level_name: string;
 
   @IsInt()

@@ -1,3 +1,5 @@
+// mrmnew/backend/src/personel/personel.service.ts
+
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Personel } from './personel.entity';
@@ -15,18 +17,20 @@ export class PersonelService {
     @InjectRepository(ClassificationLevel) private classificationRepo: Repository<ClassificationLevel>,
   ) {}
 
-  // --- A create, findAll, findOne, update metódusok VÁLTOZATLANOK ---
   async create(dto: CreatePersonelDto): Promise<Personel> {
     const psd = this.psdRepo.create(dto.personal_security_data);
 
     if (dto.personal_security_data.nemzeti_szint_id) {
-      psd.nemzeti_szint = await this.classificationRepo.findOneByOrFail({ classification_id: dto.personal_security_data.nemzeti_szint_id });
+      // JAVÍTVA: classification_id -> id
+      psd.nemzeti_szint = await this.classificationRepo.findOneByOrFail({ id: dto.personal_security_data.nemzeti_szint_id });
     }
     if (dto.personal_security_data.nato_szint_id) {
-        psd.nato_szint = await this.classificationRepo.findOneByOrFail({ classification_id: dto.personal_security_data.nato_szint_id });
+      // JAVÍTVA: classification_id -> id
+      psd.nato_szint = await this.classificationRepo.findOneByOrFail({ id: dto.personal_security_data.nato_szint_id });
     }
     if (dto.personal_security_data.eu_szint_id) {
-        psd.eu_szint = await this.classificationRepo.findOneByOrFail({ classification_id: dto.personal_security_data.eu_szint_id });
+      // JAVÍTVA: classification_id -> id
+      psd.eu_szint = await this.classificationRepo.findOneByOrFail({ id: dto.personal_security_data.eu_szint_id });
     }
 
     const personel = this.personelRepo.create({
@@ -89,17 +93,20 @@ export class PersonelService {
 
       if ('nemzeti_szint_id' in psdDto) {
         psd.nemzeti_szint = psdDto.nemzeti_szint_id
-          ? await this.classificationRepo.findOneByOrFail({ classification_id: psdDto.nemzeti_szint_id })
+          // JAVÍTVA: classification_id -> id
+          ? await this.classificationRepo.findOneByOrFail({ id: psdDto.nemzeti_szint_id })
           : null;
       }
       if ('nato_szint_id' in psdDto) {
         psd.nato_szint = psdDto.nato_szint_id
-          ? await this.classificationRepo.findOneByOrFail({ classification_id: psdDto.nato_szint_id })
+          // JAVÍTVA: classification_id -> id
+          ? await this.classificationRepo.findOneByOrFail({ id: psdDto.nato_szint_id })
           : null;
       }
       if ('eu_szint_id' in psdDto) {
         psd.eu_szint = psdDto.eu_szint_id
-          ? await this.classificationRepo.findOneByOrFail({ classification_id: psdDto.eu_szint_id })
+          // JAVÍTVA: classification_id -> id
+          ? await this.classificationRepo.findOneByOrFail({ id: psdDto.eu_szint_id })
           : null;
       }
     }

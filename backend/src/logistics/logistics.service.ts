@@ -2,13 +2,13 @@
 
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Hardware, HardwareType } from 'src/hardware/hardware.entity';
+import { Hardware } from 'src/hardware/hardware.entity';
 import { System } from 'src/systems/system.entity';
 import { In, Repository } from 'typeorm';
 import { LogisticsItem, LogisticsItemStatus } from './entities/logistics-item.entity';
 import { CreateLogisticsItemDto } from './dto/create-logistics-item.dto';
 import { AssignLogisticsItemDto } from './dto/assign-logistics-item.dto';
-import { ClassificationLevel } from 'src/classifications/classification.entity'; // Szükséges import
+import { ClassificationLevel } from 'src/classifications/classification.entity';
 
 @Injectable()
 export class LogisticsService {
@@ -17,7 +17,6 @@ export class LogisticsService {
         @InjectRepository(Hardware) private hardwareRepo: Repository<Hardware>,
         @InjectRepository(System) private systemRepo: Repository<System>,
         @InjectRepository(ClassificationLevel) private classificationRepo: Repository<ClassificationLevel>,
-
     ) {}
 
     /**
@@ -69,11 +68,9 @@ export class LogisticsService {
             throw new NotFoundException('A célrendszer nem található.');
         }
 
-        // 1. Új hardver entitás létrehozása a DTO-ból
         const newHardware = this.hardwareRepo.create(hardwareData);
         newHardware.system = system;
 
-        // Szülő és minősítések kezelése (a hardware.service logikájából átemelve)
         if (parent_hardware_id) {
             const parent = await this.hardwareRepo.findOneBy({ hardware_id: parent_hardware_id });
             if (!parent) throw new NotFoundException('A szülő hardver nem található.');
@@ -81,20 +78,18 @@ export class LogisticsService {
         }
 
         if (classification_ids && classification_ids.length > 0) {
-            const classifications = await this.classificationRepo.findBy({ classification_id: In(classification_ids) });
+            // JAVÍTVA: classification_id -> id
+            const classifications = await this.classificationRepo.findBy({ id: In(classification_ids) });
             if (classifications.length !== classification_ids.length) throw new NotFoundException('Egy vagy több minősítés nem található.');
             newHardware.classifications = classifications;
         }
         
-        // 2. Új hardver mentése az adatbázisba
         const savedHardware = await this.hardwareRepo.save(newHardware);
 
-        // 3. Eredeti logisztikai tétel státuszának frissítése
         item.status = LogisticsItemStatus.KIADVA;
-        item.assigned_hardware = savedHardware; // Összekapcsoljuk az új hardverrel
+        item.assigned_hardware = savedHardware;
         await this.itemRepo.save(item);
 
         return savedHardware;
     }
-
 }

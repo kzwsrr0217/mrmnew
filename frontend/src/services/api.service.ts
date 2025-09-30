@@ -1,8 +1,8 @@
 // mrmnew/frontend/src/services/api.service.ts
 
 import axios from 'axios';
-import { Location } from '../types';
-import { DataHandlingPermit, Classification } from '../types';
+import { Location, DataHandlingPermit, Classification } from '../types';
+
 
 export const apiClient = axios.create({
   baseURL: 'http://localhost:3000',
@@ -258,11 +258,11 @@ export const getLocations = () => {
   return apiClient.get<Location[]>('/locations');
 };
 
-export const createLocation = (data: Omit<Location, 'id'>) => {
+export const createLocation = (data: Omit<Location, 'id' | 'full_address'>) => {
   return apiClient.post('/locations', data);
 };
 
-export const updateLocation = (id: number, data: Partial<Omit<Location, 'id'>>) => {
+export const updateLocation = (id: number, data: Partial<Omit<Location, 'id' | 'full_address'>>) => {
   return apiClient.patch(`/locations/${id}`, data);
 };
 
@@ -271,9 +271,20 @@ export const deleteLocation = (id: number) => {
 };
 
 // --- MINŐSÍTÉSEK (CLASSIFICATIONS) API ---
-// Erre szükségünk lesz a legördülő menühöz
 export const getClassifications = () => {
   return apiClient.get<Classification[]>('/classifications');
+};
+
+export const createClassification = (data: Omit<Classification, 'id'>) => {
+    return apiClient.post('/classifications', data);
+};
+
+export const updateClassification = (id: number, data: Partial<Omit<Classification, 'id'>>) => {
+    return apiClient.patch(`/classifications/${id}`, data);
+};
+
+export const deleteClassification = (id: number) => {
+    return apiClient.delete(`/classifications/${id}`);
 };
 
 // --- ADATKEZELÉSI ENGEDÉLYEK (DATA HANDLING PERMITS) API ---
@@ -281,18 +292,23 @@ export const getPermits = () => {
   return apiClient.get<DataHandlingPermit[]>('/data-handling-permits');
 };
 
-export const createPermit = (data: FormData) => {
-  return apiClient.post('/data-handling-permits', data, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+// JAVÍTVA: JSON payload-ot küldünk, nem FormData-t
+export const createPermit = (data: any) => {
+  return apiClient.post<DataHandlingPermit>('/data-handling-permits', data);
 };
 
-export const updatePermit = (id: number, data: FormData) => {
-  return apiClient.patch(`/data-handling-permits/${id}`, data, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+// JAVÍTVA: JSON payload-ot küldünk, nem FormData-t
+export const updatePermit = (id: number, data: any) => {
+  return apiClient.patch<DataHandlingPermit>(`/data-handling-permits/${id}`, data);
 };
 
 export const deletePermit = (id: number) => {
   return apiClient.delete(`/data-handling-permits/${id}`);
+};
+
+// ÚJ: Külön függvény a fájlfeltöltéshez
+export const uploadPermitFile = (id: number, data: FormData) => {
+  return apiClient.post(`/data-handling-permits/${id}/upload`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 };

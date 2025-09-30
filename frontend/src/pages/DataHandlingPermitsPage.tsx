@@ -1,7 +1,7 @@
-// src/pages/DataHandlingPermitsPage.tsx
+// mrmnew/frontend/src/pages/DataHandlingPermitsPage.tsx
 
 import { useState, useEffect, FormEvent } from 'react';
-import { getPermits, createPermit, updatePermit, deletePermit, getLocations, getClassifications } from '../services/api.service';
+import { getPermits, createPermit, updatePermit, deletePermit, getLocations, getClassifications, uploadPermitFile } from '../services/api.service';
 import { DataHandlingPermit, Location, Classification, SecurityClass } from '../types';
 
 export function DataHandlingPermitsPage() {
@@ -11,18 +11,17 @@ export function DataHandlingPermitsPage() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPermit, setEditingPermit] = useState<DataHandlingPermit | null>(null);
   
-  // Űrlap adatok
-  const [formData, setFormData] = useState({
+  const initialFormData = {
     registration_number: '',
     security_class: SecurityClass.SECOND_CLASS,
     locationId: '',
-    classificationIds: [] as number[],
+    classification_level_ids: [] as number[],
     notes: '',
-  });
+  };
+  const [formData, setFormData] = useState(initialFormData);
   const [file, setFile] = useState<File | null>(null);
 
   const fetchData = async () => {
@@ -30,9 +29,7 @@ export function DataHandlingPermitsPage() {
     setError(null);
     try {
       const [permitsRes, locationsRes, classificationsRes] = await Promise.all([
-        getPermits(),
-        getLocations(),
-        getClassifications(),
+        getPermits(), getLocations(), getClassifications(),
       ]);
       setPermits(permitsRes.data);
       setLocations(locationsRes.data);
@@ -44,19 +41,11 @@ export function DataHandlingPermitsPage() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const openModalForCreate = () => {
     setEditingPermit(null);
-    setFormData({
-      registration_number: '',
-      security_class: SecurityClass.SECOND_CLASS,
-      locationId: '',
-      classificationIds: [],
-      notes: '',
-    });
+    setFormData(initialFormData);
     setFile(null);
     setIsModalOpen(true);
   };
@@ -67,7 +56,7 @@ export function DataHandlingPermitsPage() {
       registration_number: permit.registration_number,
       security_class: permit.security_class,
       locationId: permit.location.id.toString(),
-      classificationIds: permit.classification_levels.map(c => c.id),
+      classification_level_ids: permit.classification_levels.map(c => c.id),
       notes: permit.notes || '',
     });
     setFile(null);
@@ -83,37 +72,40 @@ export function DataHandlingPermitsPage() {
 
   const handleMultiSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const values = Array.from(e.target.selectedOptions, option => Number(option.value));
-    setFormData(prev => ({...prev, classificationIds: values}));
+    setFormData(prev => ({...prev, classification_level_ids: values}));
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFile(e.target.files[0]);
-    }
+    if (e.target.files) setFile(e.target.files[0]);
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
-    const data = new FormData();
-    data.append('registration_number', formData.registration_number);
-    data.append('security_class', formData.security_class);
-    data.append('locationId', formData.locationId);
-    data.append('notes', formData.notes);
-    formData.classificationIds.forEach(id => data.append('classificationIds[]', id.toString()));
-    if (file) {
-      data.append('file', file);
-    }
-
+    const payload = {
+      ...formData,
+      locationId: Number(formData.locationId)
+    };
+    
     try {
+      let savedPermit: DataHandlingPermit;
       if (editingPermit) {
-        await updatePermit(editingPermit.id, data);
+        const res = await updatePermit(editingPermit.id, payload);
+        savedPermit = res.data;
       } else {
-        await createPermit(data);
+        const res = await createPermit(payload);
+        savedPermit = res.data;
       }
+
+      if (file && savedPermit.id) {
+        const fileData = new FormData();
+        fileData.append('file', file);
+        await uploadPermitFile(savedPermit.id, fileData);
+      }
+      
       closeModal();
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       alert(`Hiba történt: ${err.response?.data?.message || 'Ismeretlen hiba'}`);
     }
   };
@@ -129,8 +121,10 @@ export function DataHandlingPermitsPage() {
     }
   };
 
-  // Szabad helyszínek (amelyekhez még nem tartozik engedély)
-  const availableLocations = locations.filter(loc => !permits.some(p => p.location.id === loc.id));
+  const availableLocations = locations.filter(loc => 
+      !permits.some(p => p.location.id === loc.id) || 
+      (editingPermit && editingPermit.location.id === loc.id)
+  );
 
   if (loading) return <p>Betöltés...</p>;
   if (error) return <p style={{ color: 'red' }}>{error}</p>;
@@ -145,7 +139,7 @@ export function DataHandlingPermitsPage() {
       <table>
         <thead>
           <tr>
-            <th>Nyilvántartási szám</th>
+            <th>Nyilv. szám</th>
             <th>Helyszín</th>
             <th>Biztonsági osztály</th>
             <th>Minősítési szintek</th>
@@ -157,7 +151,7 @@ export function DataHandlingPermitsPage() {
           {permits.map(permit => (
             <tr key={permit.id}>
               <td>{permit.registration_number}</td>
-              <td>{permit.location.full_address}</td>
+              <td>{permit.location?.full_address || 'N/A'}</td>
               <td>{permit.security_class}</td>
               <td>{permit.classification_levels.map(c => c.level_name).join(', ')}</td>
               <td>
@@ -192,21 +186,20 @@ export function DataHandlingPermitsPage() {
                 <label>Helyszín *</label>
                 <select name="locationId" value={formData.locationId} onChange={handleFormChange} required>
                   <option value="">-- Válasszon egy szabad helyszínt --</option>
-                  {editingPermit && <option value={editingPermit.location.id}>{editingPermit.location.full_address}</option>}
                   {availableLocations.map(loc => <option key={loc.id} value={loc.id}>{loc.full_address}</option>)}
                 </select>
 
-                <label>Minősítési szintek *</label>
-                <select name="classificationIds" value={formData.classificationIds.map(String)} onChange={handleMultiSelectChange} multiple required style={{height: '150px'}}>
-                  {classifications.map(c => <option key={c.id} value={c.id}>{c.type} - {c.level_name}</option>)}
+                <label>Minősítési szintek</label>
+                <select name="classification_level_ids" value={formData.classification_level_ids.map(String)} onChange={handleMultiSelectChange} multiple style={{height: '150px'}}>
+                  {classifications.map(c => <option key={c.id} value={c.id}>{`${c.type} - ${c.level_name}`}</option>)}
                 </select>
                 
                 <label>Megjegyzés</label><textarea name="notes" value={formData.notes} onChange={handleFormChange} />
                 <label>Engedély (PDF)</label><input type="file" name="file" onChange={handleFileChange} accept="application/pdf" />
               </div>
-              <div style={{ marginTop: '1rem' }}>
+              <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+                <button type="button" onClick={closeModal} style={{ marginRight: '8px' }}>Mégse</button>
                 <button type="submit">Mentés</button>
-                <button type="button" onClick={closeModal} style={{ marginLeft: '8px' }}>Mégse</button>
               </div>
             </form>
           </div>

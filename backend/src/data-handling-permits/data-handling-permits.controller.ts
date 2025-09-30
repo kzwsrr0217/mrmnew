@@ -1,8 +1,10 @@
-import { Controller, Post, Body, Param, UploadedFile, UseInterceptors, Get, Res } from '@nestjs/common';
+// mrmnew/backend/src/data-handling-permits/data-handling-permits.controller.ts
+import { Controller, Get, Post, Body, Patch, Param, Delete, UploadedFile, UseInterceptors, Res } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { DataHandlingPermitsService } from './data-handling-permits.service';
 import { CreateDataHandlingPermitDto } from './dto/create-data-handling-permit.dto';
+import { UpdateDataHandlingPermitDto } from './dto/update-data-handling-permit.dto';
 import { Response } from 'express';
 import { join } from 'path';
 
@@ -10,7 +12,30 @@ import { join } from 'path';
 export class DataHandlingPermitsController {
   constructor(private readonly permitsService: DataHandlingPermitsService) {}
 
-  // ... (ide jönnek majd a CRUD műveletek: GET, POST, PATCH, DELETE)
+  @Post()
+  create(@Body() createPermitDto: CreateDataHandlingPermitDto) {
+    return this.permitsService.create(createPermitDto);
+  }
+
+  @Get()
+  findAll() {
+    return this.permitsService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.permitsService.findOne(+id);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updatePermitDto: UpdateDataHandlingPermitDto) {
+    return this.permitsService.update(+id, updatePermitDto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.permitsService.remove(+id);
+  }
 
   @Post(':id/upload')
   @UseInterceptors(FileInterceptor('file', {
@@ -23,15 +48,15 @@ export class DataHandlingPermitsController {
     }),
   }))
   async uploadPermitFile(
-    @Param('id') id: number,
+    @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.permitsService.savePermitFile(id, file.path, file.originalname);
+    return this.permitsService.savePermitFile(+id, file.path, file.originalname);
   }
 
   @Get(':id/download')
-  async downloadPermitFile(@Param('id') id: number, @Res() res: Response) {
-    const permit = await this.permitsService.findOne(id);
+  async downloadPermitFile(@Param('id') id: string, @Res() res: Response) {
+    const permit = await this.permitsService.findOne(+id);
     if (!permit || !permit.file_path) {
       return res.status(404).send('A fájl nem található.');
     }

@@ -1,6 +1,8 @@
+// mrmnew/backend/src/locations/location.entity.ts
+
 import { Hardware } from '../hardware/hardware.entity';
 import { DataHandlingPermit } from '../data-handling-permits/data-handling-permit.entity';
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, OneToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, OneToOne, AfterLoad } from 'typeorm';
 
 @Entity('locations')
 export class Location {
@@ -22,9 +24,14 @@ export class Location {
   @Column()
   room: string;
 
-  // Egyedi azonosító a könnyebb kereshetőségért
-  @Column({ unique: true })
+  // Ez a mező már nem lesz oszlop az adatbázisban.
+  // A @AfterLoad hook tölti fel automatikusan.
   full_address: string;
+
+  @AfterLoad()
+  generateFullAddress() {
+    this.full_address = `${this.zip_code} ${this.city}, ${this.address}, ${this.building} ép., ${this.room}`;
+  }
 
   @OneToMany(() => Hardware, hardware => hardware.location)
   hardware: Hardware[];

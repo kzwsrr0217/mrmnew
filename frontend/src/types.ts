@@ -105,10 +105,12 @@ export enum SecurityClass {
   SECOND_CLASS = 'Másod Osztály',
 }
 
+// JAVÍTVA: A backend ClassificationLevel entitásához igazítva
 export interface Classification {
   id: number;
   level_name: string;
-  type: 'Nemzeti' | 'NATO' | 'EU';
+  type: 'NEMZETI' | 'NATO' | 'EU'; // Enum string értékek
+  rank: number;
 }
 
 export interface DataHandlingPermit {
@@ -116,10 +118,12 @@ export interface DataHandlingPermit {
   registration_number: string;
   security_class: SecurityClass;
   notes: string | null;
-  location: Location; // Kapcsolat a helyszínnel
-  classification_levels: Classification[]; // Kapcsolat a minősítésekkel
+  location: Location;
+  classification_levels: Classification[];
   original_filename: string | null;
+  file_path: string | null;
 }
+
 export interface Hardware {
   hardware_id: number;
   type: HardwareType;
@@ -136,7 +140,7 @@ export interface Hardware {
   storage_size_gb?: number;
   storage_type?: StorageType;
   parent_hardware_id?: number;
-  classification_ids?: number[];
+  classifications?: Classification[]; // JAVÍTVA a névegyezés miatt
   location: Location | null;
   installed_software: { name: string, version: string }[];
 }
