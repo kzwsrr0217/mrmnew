@@ -161,8 +161,9 @@ export const deleteSoftware = (id: number) => {
 };
 
 // --- Személyi állomány (Personel) végpontok ---
-export const getPersonel = () => {
-  return apiClient.get('/personel');
+export const getPersonel = (search?: string) => {
+  const params = search ? { search } : {};
+  return apiClient.get('/personel', { params });
 };
 
 export const createPersonel = (data: any) => {

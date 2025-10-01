@@ -3,7 +3,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Personel } from './personel.entity';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { CreatePersonelDto } from './dto/create-personel.dto';
 import { PersonalSecurityData } from '../personal-security-data/personal-security-data.entity';
 import { ClassificationLevel } from '../classifications/classification.entity';
@@ -44,16 +44,27 @@ export class PersonelService {
     return this.personelRepo.save(personel);
   }
 
-  findAll(): Promise<Personel[]> {
-    return this.personelRepo.find({
-      relations: {
-        personal_security_data: {
-          nemzeti_szint: true,
-          nato_szint: true,
-          eu_szint: true,
+  findAll(search?: string): Promise<Personel[]> {
+    const findOptions = {
+        relations: {
+            personal_security_data: {
+                nemzeti_szint: true,
+                nato_szint: true,
+                eu_szint: true,
+            },
         },
-      },
-    });
+        where: {},
+        order: { nev: 'ASC' } as any,
+    };
+
+    if (search) {
+        // Ha van keresési kifejezés, a 'where' opciót kiegészítjük
+        findOptions.where = {
+            nev: Like(`%${search}%`) // SQL LIKE keresés
+        };
+    }
+
+    return this.personelRepo.find(findOptions);
   }
 
   async findOne(id: number): Promise<Personel> {

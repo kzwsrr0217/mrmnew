@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common'; // <-- Query importálása
 import { PersonelService } from './personel.service';
 import { CreatePersonelDto } from './dto/create-personel.dto';
 import { UpdatePersonelDto } from './dto/update-personel.dto';
@@ -19,11 +19,9 @@ export class PersonelController {
   }
 
   @Get()
-  // A GET végpontokat minden bejelentkezett felhasználó elérheti (nincs @Roles dekorátor)
-  findAll() {
-    return this.personelService.findAll();
+  findAll(@Query('search') search?: string) {
+    return this.personelService.findAll(search);
   }
-
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.personelService.findOne(+id);
