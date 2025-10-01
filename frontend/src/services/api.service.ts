@@ -327,3 +327,20 @@ export const uploadPermitFile = (id: number, data: FormData) => {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };
+
+// --- Port Feloldási Napló (Port Unlocking Log) API ---
+export const getPortUnlockLogs = () => {
+  return apiClient.get('/port-unlocking-log');
+};
+
+export const createPortUnlockLog = (data: any) => {
+  return apiClient.post('/port-unlocking-log', data);
+};
+
+export const approvePortUnlockLog = (id: string) => {
+  return apiClient.patch(`/port-unlocking-log/${id}/approve`);
+};
+
+export const closePortUnlockLog = (id: string) => {
+  return apiClient.patch(`/port-unlocking-log/${id}/close`);
+};

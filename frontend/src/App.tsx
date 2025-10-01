@@ -22,6 +22,7 @@ import { LogisticsPage } from './pages/LogisticsPage';
 import { LocationsPage } from './pages/LocationsPage';
 import { DataHandlingPermitsPage } from './pages/DataHandlingPermitsPage';
 import { ClassificationsPage } from './pages/ClassificationsPage';
+import { PortUnlockingLogPage } from './pages/PortUnlockingLogPage'; // <-- ÚJ IMPORT
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
         <Route path="/pending-requests" element={<ProtectedRoute roles={[UserRole.BV, UserRole.HBV, UserRole.HHBV, UserRole.SZBF]}><MainLayout><PendingRequestsPage /></MainLayout></ProtectedRoute>} />
         <Route path="/maintenance" element={<ProtectedRoute><MainLayout><MaintenancePage /></MainLayout></ProtectedRoute>} />
         <Route path="/logistics" element={<ProtectedRoute><MainLayout><LogisticsPage /></MainLayout></ProtectedRoute>} />
+        <Route path="/port-unlocking-log" element={<ProtectedRoute><MainLayout><PortUnlockingLogPage /></MainLayout></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><AdminPage /></MainLayout></ProtectedRoute>} />
         <Route path="/audit" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><AuditLogPage /></MainLayout></ProtectedRoute>} />
         <Route path="/admin/dashboard" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><AdminDashboardPage /></MainLayout></ProtectedRoute>} />

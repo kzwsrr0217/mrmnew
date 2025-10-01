@@ -37,6 +37,7 @@ export function Sidebar() {
         <Link to="/tickets">Feladatok</Link>
         <Link to="/reports">Jelentések</Link>
         <Link to="/logistics">Logisztika</Link>
+        <Link to="/port-unlocking-log">Port feloldási napló</Link>
       </nav>
       
       <h3>Folyamatok</h3>
