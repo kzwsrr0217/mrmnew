@@ -16,17 +16,21 @@ export class UsersService {
   async create(username: string, pass: string, role: UserRole): Promise<Omit<User, 'password'>> {
     const newUser = new User();
     newUser.username = username;
-    newUser.password = pass; // A @BeforeInsert hook fogja hashelni mentés előtt
+    newUser.password = pass;
     newUser.role = role;
     
     const savedUser = await this.usersRepository.save(newUser);
-    
-    // A save után a jelszó már nem lesz a visszatérési objektumban a `select: false` miatt
     return savedUser;
   }
 
   async findOne(username: string): Promise<User | undefined> {
     const user = await this.usersRepository.findOneBy({ username });
+    return user || undefined;
+  }
+
+  // --- ÚJ METÓDUS ---
+  async findOneById(id: number): Promise<User | undefined> {
+    const user = await this.usersRepository.findOneBy({ id });
     return user || undefined;
   }
 
@@ -51,15 +55,10 @@ export class UsersService {
       throw new NotFoundException(`A(z) ${id} azonosítójú felhasználó nem található.`);
     }
     
-    // Nem kell QueryBuilder, mert a @BeforeInsert hook elvégzi a hashelést
     user.password = newPassword; 
     await this.usersRepository.save(user);
   }
 
-    // --- ÚJ METÓDUS ---
-  /**
-   * Lekérdez egy felhasználót a jelszavával együtt, authentikációhoz.
-   */
   async findOneWithPassword(username: string): Promise<User | undefined> {
     const user = await this.usersRepository.createQueryBuilder("user")
         .addSelect("user.password")

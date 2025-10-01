@@ -258,7 +258,10 @@ export function SystemDetail({ system: initialSystem, onBack }: SystemDetailProp
               <tr key={doc.document_id}>
                 <td style={thTdStyle}>{doc.type}</td>
                 <td style={thTdStyle}>{doc.registration_number || 'N/A'}</td>
-                <td style={thTdStyle}>{doc.handler_name || 'N/A'}</td>
+                
+                {/* --- ITT A JAVÍTÁS --- */}
+                <td style={thTdStyle}>{doc.uploader?.username || 'N/A'}</td>
+                
                 <td style={thTdStyle}>{formatDate(doc.uploaded_at)}</td>
                 <td style={thTdStyle}>
                   <button onClick={() => handleDownload(doc)} style={{marginLeft: '1rem'}}>Letöltés</button>
@@ -269,7 +272,7 @@ export function SystemDetail({ system: initialSystem, onBack }: SystemDetailProp
           </tbody>
         </table>
       )}
-       <button onClick={() => setShowAddDocument(true)} style={{marginTop: '1rem'}}>Új dokumentum feltöltése</button>
+      <button onClick={() => setShowAddDocument(true)} style={{marginTop: '1rem'}}>Új dokumentum feltöltése</button>
       
       <hr />
       <h3>Hardverek</h3>
