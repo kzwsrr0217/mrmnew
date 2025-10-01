@@ -30,7 +30,10 @@ export class HardwareService {
     
     const hardware = this.hardwareRepo.create(hardwareData);
     hardware.system = system;
-
+    // Ha az inventory_number üres string, alakítsuk át null-ra.
+    if (hardware.inventory_number === '') {
+        hardware.inventory_number = null;
+    }
     if (parent_hardware_id) {
       const parent = await this.hardwareRepo.findOneBy({ hardware_id: parent_hardware_id });
       if (!parent) throw new NotFoundException(`A szülő hardver nem található.`);
@@ -76,6 +79,11 @@ export class HardwareService {
 
     Object.assign(hardware, updateData);
     
+    // Az update metódusban is biztosítjuk, hogy az üres string NULL legyen.
+    if (hardware.inventory_number === '') {
+        hardware.inventory_number = null;
+    }
+
     if (location !== undefined) {
       hardware.location = location ? await this.locationRepo.findOneByOrFail({ id: location }) : null;
     }

@@ -1,10 +1,11 @@
-// frontend/src/components/AddPersonelForm.tsx
+
+// mrmnew/frontend/src/components/AddPersonelForm.tsx
 
 import { useState, useEffect, FormEvent } from 'react';
 import { createPersonel, getClassifications } from '../services/api.service';
 
 interface Classification {
-  classification_id: number;
+  id: number; // JAVÍTVA: classification_id -> id
   type: string;
   level_name: string;
 }
@@ -70,7 +71,7 @@ export function AddPersonelForm({ onPersonelAdded, onCancel }: AddPersonelFormPr
     }
   };
 
-  return (
+ return (
     <div className="modal-backdrop">
       <div className="modal">
         <form onSubmit={handleSubmit}>
@@ -87,8 +88,9 @@ export function AddPersonelForm({ onPersonelAdded, onCancel }: AddPersonelFormPr
             <label>Szint:</label>
             <select value={nemzetiId} onChange={e => setNemzetiId(e.target.value)}>
               <option value="">-- Nincs --</option>
+              {/* JAVÍTVA: key={c.id} és value={c.id} */}
               {filterClassifications('NEMZETI').map(c => 
-                <option key={c.classification_id} value={c.classification_id}>{c.level_name}</option>
+                <option key={c.id} value={c.id}>{c.level_name}</option>
               )}
             </select>
             <label>Tanúsítvány dátuma:</label>
@@ -97,13 +99,14 @@ export function AddPersonelForm({ onPersonelAdded, onCancel }: AddPersonelFormPr
             <input type="date" value={szbtLejarat} onChange={e => setSzbtLejarat(e.target.value)} />
           </fieldset>
 
+
           <fieldset>
             <legend>NATO minősítés</legend>
             <label>Szint:</label>
             <select value={natoId} onChange={e => setNatoId(e.target.value)}>
               <option value="">-- Nincs --</option>
               {filterClassifications('NATO').map(c => 
-                <option key={c.classification_id} value={c.classification_id}>{c.level_name}</option>
+                <option key={c.id} value={c.id}>{c.level_name}</option>
               )}
             </select>
             <label>Tanúsítvány dátuma:</label>

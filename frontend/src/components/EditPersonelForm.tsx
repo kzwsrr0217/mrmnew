@@ -1,8 +1,9 @@
-// frontend/src/components/EditPersonelForm.tsx
+// mrmnew/frontend/src/components/EditPersonelForm.tsx
 
 import { useState, useEffect, FormEvent } from 'react';
 import { updatePersonel, getClassifications } from '../services/api.service';
 
+// Típusok frissítve a helyes 'id'-re
 interface Personel {
   personel_id: number;
   nev: string;
@@ -12,16 +13,18 @@ interface Personel {
     titoktartasi_szam: string | null;
     szbt_datum: Date | null;
     szbt_lejarat: Date | null;
+    nato_datum: Date | null;
+    nato_lejarat: Date | null;
     eu_datum: Date | null;
     eu_lejarat: Date | null;
-    nemzeti_szint: { classification_id: number } | null;
-    nato_szint: { classification_id: number } | null;
-    eu_szint: { classification_id: number } | null;
+    nemzeti_szint: { id: number } | null;
+    nato_szint: { id: number } | null;
+    eu_szint: { id: number } | null;
   };
 }
 
 interface Classification {
-  classification_id: number;
+  id: number;
   type: string;
   level_name: string;
 }
@@ -37,13 +40,18 @@ export function EditPersonelForm({ personel, onPersonelUpdated, onCancel }: Edit
   const [beosztas, setBeosztas] = useState(personel.personal_security_data?.beosztas || '');
   const [rendfokozat, setRendfokozat] = useState(personel.personal_security_data?.rendfokozat || '');
   const [titoktartasiSzam, setTitoktartasiSzam] = useState(personel.personal_security_data?.titoktartasi_szam || '');
-  const [nemzetiId, setNemzetiId] = useState<string>(String(personel.personal_security_data?.nemzeti_szint?.classification_id || ''));
-  const [natoId, setNatoId] = useState<string>(String(personel.personal_security_data?.nato_szint?.classification_id || ''));
-  const [euId, setEuId] = useState<string>(String(personel.personal_security_data?.eu_szint?.classification_id || ''));
-  const [szbtDatum, setSzbtDatum] = useState(personel.personal_security_data?.szbt_datum ? new Date(personel.personal_security_data.szbt_datum).toISOString().split('T')[0] : '');
-  const [szbtLejarat, setSzbtLejarat] = useState(personel.personal_security_data?.szbt_lejarat ? new Date(personel.personal_security_data.szbt_lejarat).toISOString().split('T')[0] : '');
-  const [euDatum, setEuDatum] = useState(personel.personal_security_data?.eu_datum ? new Date(personel.personal_security_data.eu_datum).toISOString().split('T')[0] : '');
-  const [euLejarat, setEuLejarat] = useState(personel.personal_security_data?.eu_lejarat ? new Date(personel.personal_security_data.eu_lejarat).toISOString().split('T')[0] : '');
+  
+  const formatDateForInput = (date: Date | null) => date ? new Date(date).toISOString().split('T')[0] : '';
+  const [szbtDatum, setSzbtDatum] = useState(formatDateForInput(personel.personal_security_data?.szbt_datum));
+  const [szbtLejarat, setSzbtLejarat] = useState(formatDateForInput(personel.personal_security_data?.szbt_lejarat));
+  const [natoDatum, setNatoDatum] = useState(formatDateForInput(personel.personal_security_data?.nato_datum));
+  const [natoLejarat, setNatoLejarat] = useState(formatDateForInput(personel.personal_security_data?.nato_lejarat));
+  const [euDatum, setEuDatum] = useState(formatDateForInput(personel.personal_security_data?.eu_datum));
+  const [euLejarat, setEuLejarat] = useState(formatDateForInput(personel.personal_security_data?.eu_lejarat));
+
+  const [nemzetiId, setNemzetiId] = useState<string>(String(personel.personal_security_data?.nemzeti_szint?.id || ''));
+  const [natoId, setNatoId] = useState<string>(String(personel.personal_security_data?.nato_szint?.id || ''));
+  const [euId, setEuId] = useState<string>(String(personel.personal_security_data?.eu_szint?.id || ''));
 
   const [classifications, setClassifications] = useState<Classification[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -69,10 +77,13 @@ export function EditPersonelForm({ personel, onPersonelUpdated, onCancel }: Edit
         nemzeti_szint_id: nemzetiId ? Number(nemzetiId) : null,
         nato_szint_id: natoId ? Number(natoId) : null,
         eu_szint_id: euId ? Number(euId) : null,
-        szbt_datum: szbtDatum ? new Date(szbtDatum) : null,
-        szbt_lejarat: szbtLejarat ? new Date(szbtLejarat) : null,
-        eu_datum: euDatum ? new Date(euDatum) : null,
-        eu_lejarat: euLejarat ? new Date(euLejarat) : null,
+        // JAVÍTVA: A dátumokat stringként küldjük, ha ki vannak töltve
+        szbt_datum: szbtDatum || null,
+        szbt_lejarat: szbtLejarat || null,
+        nato_datum: natoDatum || null,
+        nato_lejarat: natoLejarat || null,
+        eu_datum: euDatum || null,
+        eu_lejarat: euLejarat || null,
       },
     };
 
@@ -98,14 +109,12 @@ export function EditPersonelForm({ personel, onPersonelUpdated, onCancel }: Edit
 
           <fieldset>
             <legend>Személyi biztonsági tanúsítványok</legend>
-            {/* A select mezők ugyanazok, mint az AddPersonelForm-ban */}
             <div>
               <label>Nemzeti:</label>
               <select value={nemzetiId} onChange={e => setNemzetiId(e.target.value)}>
                 <option value="">-- Nincs --</option>
-                {filterClassifications('NEMZETI').map(c => 
-                  <option key={c.classification_id} value={c.classification_id}>{c.level_name}</option>
-                )}
+                {/* JAVÍTVA: A key és a value is a helyes 'id'-t használja */}
+                {filterClassifications('NEMZETI').map(c => <option key={c.id} value={c.id}>{c.level_name}</option>)}
               </select>
             </div>
             <div>
@@ -120,18 +129,22 @@ export function EditPersonelForm({ personel, onPersonelUpdated, onCancel }: Edit
               <label>NATO:</label>
               <select value={natoId} onChange={e => setNatoId(e.target.value)}>
                 <option value="">-- Nincs --</option>
-                {filterClassifications('NATO').map(c => 
-                  <option key={c.classification_id} value={c.classification_id}>{c.level_name}</option>
-                )}
+                {filterClassifications('NATO').map(c => <option key={c.id} value={c.id}>{c.level_name}</option>)}
               </select>
+            </div>
+             <div>
+                <label>NATO tanúsítvány dátuma:</label>
+                <input type="date" value={natoDatum} onChange={e => setNatoDatum(e.target.value)} />
+            </div>
+             <div>
+                <label>NATO tanúsítvány lejárata:</label>
+                <input type="date" value={natoLejarat} onChange={e => setNatoLejarat(e.target.value)} />
             </div>
             <div>
               <label>EU:</label>
               <select value={euId} onChange={e => setEuId(e.target.value)}>
                 <option value="">-- Nincs --</option>
-                {filterClassifications('EU').map(c => 
-                  <option key={c.classification_id} value={c.classification_id}>{c.level_name}</option>
-                )}
+                {filterClassifications('EU').map(c => <option key={c.id} value={c.id}>{c.level_name}</option>)}
               </select>
             </div>
             <div>

@@ -2,10 +2,9 @@
 
 import { useState, useMemo } from 'react';
 
-// Új típus a rendezési konfigurációnak
 type SortDirection = 'ascending' | 'descending';
 interface SortConfig<T> {
-  key: keyof T;
+  key: keyof T | string; // Engedélyezzük a stringet a beágyazott kulcsokhoz
   direction: SortDirection;
 }
 
@@ -15,6 +14,13 @@ interface UseTableControlsProps<T> {
   initialItemsPerPage?: number;
 }
 
+// ÚJ: Segédfüggvény a beágyazott értékek kinyeréséhez
+// Pl. getValue(obj, 'personel.nev') -> visszaadja az obj.personel.nev értékét
+const getValueByPath = (obj: any, path: string) => {
+    return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+};
+
+
 export function useTableControls<T>({
   data,
   filterFn,
@@ -23,20 +29,28 @@ export function useTableControls<T>({
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(initialItemsPerPage);
-  // --- ÚJ RENDEZÉSI ÁLLAPOT ---
   const [sortConfig, setSortConfig] = useState<SortConfig<T> | null>(null);
 
-  // A szűrt ÉS RENDEZETT adatok
   const sortedAndFilteredData = useMemo(() => {
     let processableData = [...data];
 
-    // 1. RENDEZÉS
     if (sortConfig !== null) {
       processableData.sort((a, b) => {
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
+        // JAVÍTVA: A segédfüggvénnyel nyerjük ki az értékeket
+        const aValue = getValueByPath(a, sortConfig.key as string);
+        const bValue = getValueByPath(b, sortConfig.key as string);
 
-        // Dátumok, számok és szövegek kezelése
+        // Biztosítjuk, hogy a null/undefined értékek a végére kerüljenek
+        if (aValue == null) return 1;
+        if (bValue == null) return -1;
+        
+        // Típus-specifikus összehasonlítás
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+            return sortConfig.direction === 'ascending' 
+                ? aValue.localeCompare(bValue) 
+                : bValue.localeCompare(aValue);
+        }
+
         if (aValue < bValue) {
           return sortConfig.direction === 'ascending' ? -1 : 1;
         }
@@ -47,7 +61,6 @@ export function useTableControls<T>({
       });
     }
 
-    // 2. SZŰRÉS
     if (searchTerm) {
       processableData = processableData.filter(item => filterFn(item, searchTerm));
     }
@@ -77,8 +90,8 @@ export function useTableControls<T>({
     setCurrentPage(1);
   };
 
-  // --- ÚJ FÜGGVÉNY A RENDEZÉS KEZELÉSÉHEZ ---
-  const requestSort = (key: keyof T) => {
+  // Módosítva, hogy stringet is elfogadjon
+  const requestSort = (key: keyof T | string) => {
     let direction: SortDirection = 'ascending';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
       direction = 'descending';
@@ -95,7 +108,7 @@ export function useTableControls<T>({
     handleItemsPerPageChange,
     searchTerm,
     handleSearchChange,
-    requestSort, // <-- ÚJ
-    sortConfig,  // <-- ÚJ
+    requestSort,
+    sortConfig,
   };
 }

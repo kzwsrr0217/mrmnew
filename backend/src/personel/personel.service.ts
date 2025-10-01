@@ -18,26 +18,29 @@ export class PersonelService {
   ) {}
 
   async create(dto: CreatePersonelDto): Promise<Personel> {
-    const psd = this.psdRepo.create(dto.personal_security_data);
+    // 1. Hozzunk létre egy új, üres PersonalSecurityData objektumot
+    const psd = new PersonalSecurityData();
+    
+    // 2. Töltsük fel az egyszerű, nem-relációs adatokkal a DTO-ból
+    Object.assign(psd, dto.personal_security_data);
 
+    // 3. Külön keressük meg és rendeljük hozzá a minősítési szinteket
     if (dto.personal_security_data.nemzeti_szint_id) {
-      // JAVÍTVA: classification_id -> id
       psd.nemzeti_szint = await this.classificationRepo.findOneByOrFail({ id: dto.personal_security_data.nemzeti_szint_id });
     }
     if (dto.personal_security_data.nato_szint_id) {
-      // JAVÍTVA: classification_id -> id
       psd.nato_szint = await this.classificationRepo.findOneByOrFail({ id: dto.personal_security_data.nato_szint_id });
     }
     if (dto.personal_security_data.eu_szint_id) {
-      // JAVÍTVA: classification_id -> id
       psd.eu_szint = await this.classificationRepo.findOneByOrFail({ id: dto.personal_security_data.eu_szint_id });
     }
+    
+    // 4. Hozzunk létre egy új Personel objektumot
+    const personel = new Personel();
+    personel.nev = dto.nev;
+    personel.personal_security_data = psd; // Rendeljük hozzá a kézzel összerakott psd objektumot
 
-    const personel = this.personelRepo.create({
-      nev: dto.nev,
-      personal_security_data: psd,
-    });
-
+    // 5. Mentsük el a Personel-t (a cascade:true miatt a psd is mentésre kerül)
     return this.personelRepo.save(personel);
   }
 
