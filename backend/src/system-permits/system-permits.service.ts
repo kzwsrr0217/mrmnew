@@ -103,29 +103,40 @@ export class SystemPermitsService {
       throw new NotFoundException(`A(z) ${permitId} azonosítójú engedély nem található.`);
     }
 
-    if (dto.engedely_szam) permit.engedely_szam = dto.engedely_szam;
-    if (dto.kerelem_szam) permit.kerelem_szam = dto.kerelem_szam;
-    if (dto.kiallitas_datuma) permit.kiallitas_datuma = dto.kiallitas_datuma;
-    if (dto.ervenyesseg_datuma) permit.ervenyesseg_datuma = dto.ervenyesseg_datuma;
+    // A DTO-ból csak a definiált kulcsokat vesszük át, elkerülve a felesleges adatokat
+    const { 
+        engedely_szam, 
+        kerelem_szam, 
+        kiallitas_datuma, 
+        ervenyesseg_datuma,
+        nemzeti_classification_id,
+        nato_classification_id,
+        eu_classification_id
+    } = dto;
+
+    if (engedely_szam) permit.engedely_szam = engedely_szam;
+    if (kerelem_szam) permit.kerelem_szam = kerelem_szam;
+    
+    // JAVÍTVA: Biztosítjuk, hogy a dátum Date objektum legyen, ha stringként érkezik
+    if (kiallitas_datuma) permit.kiallitas_datuma = new Date(kiallitas_datuma);
+    if (ervenyesseg_datuma) permit.ervenyesseg_datuma = new Date(ervenyesseg_datuma);
+
 
     if ('nemzeti_classification_id' in dto) {
-      permit.nemzeti_classification = dto.nemzeti_classification_id
-        // JAVÍTVA: classification_id -> id
-        ? await this.classificationRepo.findOneByOrFail({ id: dto.nemzeti_classification_id })
+      permit.nemzeti_classification = nemzeti_classification_id
+        ? await this.classificationRepo.findOneByOrFail({ id: nemzeti_classification_id })
         : null;
     }
 
     if ('nato_classification_id' in dto) {
-      permit.nato_classification = dto.nato_classification_id
-        // JAVÍTVA: classification_id -> id
-        ? await this.classificationRepo.findOneByOrFail({ id: dto.nato_classification_id })
+      permit.nato_classification = nato_classification_id
+        ? await this.classificationRepo.findOneByOrFail({ id: nato_classification_id })
         : null;
     }
     
     if ('eu_classification_id' in dto) {
-      permit.eu_classification = dto.eu_classification_id
-        // JAVÍTVA: classification_id -> id
-        ? await this.classificationRepo.findOneByOrFail({ id: dto.eu_classification_id })
+      permit.eu_classification = eu_classification_id
+        ? await this.classificationRepo.findOneByOrFail({ id: eu_classification_id })
         : null;
     }
 

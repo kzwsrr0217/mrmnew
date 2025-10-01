@@ -151,6 +151,15 @@ export const createSoftware = (data: { name: string, version?: string }) => {
   return apiClient.post('/software', data);
 };
 
+// --- ÚJ FÜGGVÉNYEK ---
+export const updateSoftware = (id: number, data: { name?: string, version?: string }) => {
+    return apiClient.patch(`/software/${id}`, data);
+};
+
+export const deleteSoftware = (id: number) => {
+    return apiClient.delete(`/software/${id}`);
+};
+
 // --- Személyi állomány (Personel) végpontok ---
 export const getPersonel = () => {
   return apiClient.get('/personel');

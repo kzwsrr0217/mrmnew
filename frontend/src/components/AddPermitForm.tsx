@@ -1,21 +1,23 @@
+// mrmnew/frontend/src/components/AddPermitForm.tsx
+
 import { useState, useEffect, FormEvent } from 'react';
 import { createSystemPermit, updateSystemPermit, getClassifications } from '../services/api.service';
-import { Modal } from './Modal'; // Importáljuk a Modal komponenst
+import { Modal } from './Modal';
 
-// Típusdefiníciók
+// Típusdefiníciók frissítve az 'id'-re
 interface Permit {
   permit_id: number;
   engedely_szam: string;
   kerelem_szam: string;
   kiallitas_datuma: string;
   ervenyesseg_datuma: string;
-  nemzeti_classification?: { classification_id: number };
-  nato_classification?: { classification_id: number };
-  eu_classification?: { classification_id: number };
+  nemzeti_classification?: { id: number };
+  nato_classification?: { id: number };
+  eu_classification?: { id: number };
 }
 
 interface Classification {
-  classification_id: number;
+  id: number;
   type: string;
   level_name: string;
 }
@@ -49,11 +51,12 @@ export function AddPermitForm({ systemId, permit, onPermitChange, onCancel }: Ad
     if (isEditMode && permit) {
       setEngedelySzam(permit.engedely_szam || '');
       setKerelemSzam(permit.kerelem_szam || '');
-      setKiallitasDatuma(new Date(permit.kiallitas_datuma).toISOString().split('T')[0]);
-      setErvenyessegDatuma(new Date(permit.ervenyesseg_datuma).toISOString().split('T')[0]);
-      setNemzetiId(String(permit.nemzeti_classification?.classification_id || ''));
-      setNatoId(String(permit.nato_classification?.classification_id || ''));
-      setEuId(String(permit.eu_classification?.classification_id || ''));
+      // A bejövő dátumot YYYY-MM-DD formátumra alakítjuk az input mező számára
+      setKiallitasDatuma(permit.kiallitas_datuma ? permit.kiallitas_datuma.split('T')[0] : '');
+      setErvenyessegDatuma(permit.ervenyesseg_datuma ? permit.ervenyesseg_datuma.split('T')[0] : '');
+      setNemzetiId(String(permit.nemzeti_classification?.id || ''));
+      setNatoId(String(permit.nato_classification?.id || ''));
+      setEuId(String(permit.eu_classification?.id || ''));
     }
   }, [permit, isEditMode]);
   
@@ -63,16 +66,19 @@ export function AddPermitForm({ systemId, permit, onPermitChange, onCancel }: Ad
     event.preventDefault();
     setError(null);
 
+    // A backend a dátumot egyszerű 'YYYY-MM-DD' stringként várja.
     const payload = {
       system_id: systemId,
       engedely_szam: engedelySzam,
       kerelem_szam: kerelemSzam,
-      kiallitas_datuma: new Date(kiallitasDatuma),
-      ervenyesseg_datuma: new Date(ervenyessegDatuma),
-      nemzeti_classification_id: nemzetiId ? Number(nemzetiId) : undefined,
-      nato_classification_id: natoId ? Number(natoId) : undefined,
-      eu_classification_id: euId ? Number(euId) : undefined,
+      kiallitas_datuma: kiallitasDatuma, // A stringet küldjük, nem Date objektumot
+      ervenyesseg_datuma: ervenyessegDatuma, // A stringet küldjük, nem Date objektumot
+      nemzeti_classification_id: nemzetiId ? Number(nemzetiId) : null,
+      nato_classification_id: natoId ? Number(natoId) : null,
+      eu_classification_id: euId ? Number(euId) : null,
     };
+    // A null értékeket töröljük a tisztább API hívás érdekében
+    Object.keys(payload).forEach(key => (payload[key] === null) && delete payload[key]);
 
     try {
       if (isEditMode && permit) {
@@ -80,7 +86,7 @@ export function AddPermitForm({ systemId, permit, onPermitChange, onCancel }: Ad
       } else {
         await createSystemPermit(payload);
       }
-      onPermitChange();
+      onPermitChange(); // Sikeres mentés után frissítjük a szülő komponenst
     } catch (err: any) {
       setError(err.response?.data?.message || 'Hiba történt az engedély mentése közben.');
     }
@@ -114,8 +120,9 @@ export function AddPermitForm({ systemId, permit, onPermitChange, onCancel }: Ad
             <label>Nemzeti:</label>
             <select value={nemzetiId} onChange={e => setNemzetiId(e.target.value)}>
               <option value="">-- Nincs --</option>
+              {/* JAVÍTVA: A key és a value is a helyes 'id'-t használja */}
               {filterClassifications('NEMZETI').map(c => 
-                <option key={c.classification_id} value={c.classification_id}>{c.level_name}</option>
+                <option key={c.id} value={c.id}>{c.level_name}</option>
               )}
             </select>
           </div>
@@ -124,7 +131,7 @@ export function AddPermitForm({ systemId, permit, onPermitChange, onCancel }: Ad
             <select value={natoId} onChange={e => setNatoId(e.target.value)}>
               <option value="">-- Nincs --</option>
               {filterClassifications('NATO').map(c => 
-                <option key={c.classification_id} value={c.classification_id}>{c.level_name}</option>
+                <option key={c.id} value={c.id}>{c.level_name}</option>
               )}
             </select>
           </div>
@@ -133,7 +140,7 @@ export function AddPermitForm({ systemId, permit, onPermitChange, onCancel }: Ad
             <select value={euId} onChange={e => setEuId(e.target.value)}>
               <option value="">-- Nincs --</option>
               {filterClassifications('EU').map(c => 
-                <option key={c.classification_id} value={c.classification_id}>{c.level_name}</option>
+                <option key={c.id} value={c.id}>{c.level_name}</option>
               )}
             </select>
           </div>
