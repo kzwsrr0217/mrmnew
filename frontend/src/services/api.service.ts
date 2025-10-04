@@ -344,3 +344,6 @@ export const approvePortUnlockLog = (id: string) => {
 export const closePortUnlockLog = (id: string) => {
   return apiClient.patch(`/port-unlocking-log/${id}/close`);
 };
+export const getSystemElementsReport = (systemId: number) => {
+  return apiClient.get(`/reports/system-elements/${systemId}`);
+};

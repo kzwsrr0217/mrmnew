@@ -1,7 +1,7 @@
 // mrmnew/frontend/src/pages/ReportsPage.tsx
 
-import { useState, useEffect } from 'react';
-import { getExpiringCertificates, getExpiringPermits, getAccessReport, getPersonel, getSystems } from '../services/api.service';
+import React, { useState, useEffect } from 'react';
+import { getExpiringCertificates, getExpiringPermits, getAccessReport, getPersonel, getSystems, getSystemElementsReport } from '../services/api.service';
 import { formatDate } from '../utils/date.utils';
 
 // Tanúsítvány riport sorának típusa
@@ -14,13 +14,15 @@ interface ExpiringCertificateReportRow {
   eu_lejarat: string;
 }
 
-// ÚJ: Rendszerengedély riport sorának típusa
+// Rendszerengedély riport sorának típusa
 interface ExpiringPermitReportRow {
     systemname: string;
     status: string;
     engedely_szam: string;
     ervenyesseg_datuma: string;
 }
+
+// Hozzáférési riport típusok
 interface Personel { personel_id: number; nev: string; }
 interface System { systemid: number; systemname: string; }
 interface AccessReportRow {
@@ -29,20 +31,25 @@ interface AccessReportRow {
     access_level: string;
 }
 
+// ÚJ INTERFÉSZ a manuális adatokhoz
+interface ManualData {
+  [key: string]: string;
+}
+
 export function ReportsPage() {
-  // Lejáró tanúsítványok állapota (változatlan)
+  // Lejáró tanúsítványok állapota
   const [certMonths, setCertMonths] = useState<number>(6);
   const [certResults, setCertResults] = useState<ExpiringCertificateReportRow[]>([]);
   const [certLoading, setCertLoading] = useState(false);
   const [certError, setCertError] = useState<string | null>(null);
 
-  // Lejáró engedélyek állapota (változatlan)
+  // Lejáró engedélyek állapota
   const [permitMonths, setPermitMonths] = useState<number>(3);
   const [permitResults, setPermitResults] = useState<ExpiringPermitReportRow[]>([]);
   const [permitLoading, setPermitLoading] = useState(false);
   const [permitError, setPermitError] = useState<string | null>(null);
 
-  // --- ÚJ ÁLLAPOTOK A HOZZÁFÉRÉSI JELENTÉSHEZ ---
+  // Hozzáférési jelentés állapotai
   const [personelList, setPersonelList] = useState<Personel[]>([]);
   const [systemList, setSystemList] = useState<System[]>([]);
   const [selectedPersonelId, setSelectedPersonelId] = useState<string>('');
@@ -50,6 +57,14 @@ export function ReportsPage() {
   const [accessResults, setAccessResults] = useState<AccessReportRow[]>([]);
   const [accessLoading, setAccessLoading] = useState(false);
   const [accessError, setAccessError] = useState<string | null>(null);
+
+  // --- ÚJ ÁLLAPOTOK A RENDSZERELEM RIPORTHOZ ---
+  const [elementsReportSystemId, setElementsReportSystemId] = useState<string>('');
+  const [elementsReportData, setElementsReportData] = useState<any[]>([]);
+  const [elementsLoading, setElementsLoading] = useState(false);
+  const [elementsError, setElementsError] = useState<string | null>(null);
+  const [manualData, setManualData] = useState<ManualData>({});
+
 
   // A legördülő menük adatainak betöltése
   useEffect(() => {
@@ -75,7 +90,6 @@ export function ReportsPage() {
     }
   };
 
-  // ÚJ FÜGGVÉNY a rendszerengedély riport generálásához
   const handleGeneratePermitReport = async () => {
     setPermitLoading(true);
     setPermitError(null);
@@ -90,7 +104,6 @@ export function ReportsPage() {
     }
   };
  
-  // --- ÚJ FÜGGVÉNY a hozzáférési riport generálásához ---
   const handleGenerateAccessReport = async () => {
     setAccessLoading(true);
     setAccessError(null);
@@ -107,13 +120,95 @@ export function ReportsPage() {
     } finally {
       setAccessLoading(false);
     }
-  };  
+  }; 
 
+  // --- ÚJ FÜGGVÉNY a rendszerelem riport generálásához ---
+  const handleGenerateElementsReport = async () => {
+    if (!elementsReportSystemId) return;
+    setElementsLoading(true);
+    setElementsError(null);
+    setElementsReportData([]);
+    try {
+      const response = await getSystemElementsReport(Number(elementsReportSystemId));
+      setElementsReportData(response.data);
+      setManualData({}); // Előző manuális adatok törlése
+    } catch (err) {
+      setElementsError('A rendszerelem jelentés lekérdezése sikertelen.');
+    } finally {
+      setElementsLoading(false);
+    }
+  };
+
+  const handleManualDataChange = (key: string, value: string) => {
+    setManualData(prev => ({ ...prev, [key]: value }));
+  };
 
 
   return (
-    <div>
+    <div className="page-container">
       <h1>Jelentések</h1>
+
+      {/* ==================================================================== */}
+      {/* ================= ÚJ SZEKCIÓ: RENDSZERELEM TÁBLÁZAT ================= */}
+      {/* ==================================================================== */}
+      <div className="report-section" style={{ border: '1px solid #ccc', padding: '1rem', borderRadius: '5px', marginBottom: '2rem' }}>
+        <h2>Rendszerelem Táblázat Generálása (Előnézet)</h2>
+        <p>Válasszon egy rendszert a hardver elemek listázásához.</p>
+        <div className="report-controls" style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
+          <select value={elementsReportSystemId} onChange={e => setElementsReportSystemId(e.target.value)}>
+            <option value="">-- Válasszon rendszert --</option>
+            {systemList.map(s => <option key={s.systemid} value={s.systemid}>{s.systemname}</option>)}
+          </select>
+          <button onClick={handleGenerateElementsReport} disabled={!elementsReportSystemId || elementsLoading}>
+            {elementsLoading ? 'Generálás...' : 'Előnézet Készítése'}
+          </button>
+        </div>
+
+        {elementsError && <p style={{ color: 'red' }}>{elementsError}</p>}
+
+        {elementsReportData.length > 0 && (
+          <table className="bordered-table" style={{ marginTop: '1rem' }}>
+            <thead>
+              <tr>
+                <th>Rendszerelem</th>
+                <th>Darabszám</th>
+                <th>Gyári azonosító</th>
+                <th>Tanúsítvány száma</th>
+                <th>Üzemeltetés helyszíne</th>
+                <th>Tárolás helyszíne</th>
+                <th>Megjegyzés (manuális)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {elementsReportData.map((group, groupIndex) => (
+                <React.Fragment key={group.groupName}>
+                  {group.items.map((item: any, itemIndex: number) => {
+                    const uniqueKey = `${group.groupName}-${item.id}`;
+                    return (
+                      <tr key={uniqueKey}>
+                        {itemIndex === 0 && <td rowSpan={group.count}>{group.groupName}</td>}
+                        {itemIndex === 0 && <td rowSpan={group.count} style={{textAlign: 'center'}}>{group.count}</td>}
+                        <td>{item.serial_number}</td>
+                        <td>{item.certificate}</td>
+                        <td>{item.operating_location}</td>
+                        <td>{item.storage_location}</td>
+                        <td>
+                          <input
+                            type="text"
+                            value={manualData[uniqueKey] || ''}
+                            onChange={(e) => handleManualDataChange(uniqueKey, e.target.value)}
+                            style={{ width: '100%', boxSizing: 'border-box' }}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       {/* --- HOZZÁFÉRÉSI JELENTÉS SZEKCIÓ --- */}
       <hr style={{ marginTop: '2rem' }}/>
@@ -225,7 +320,7 @@ export function ReportsPage() {
           <thead>
             <tr>
               <th>Név</th>
-              <th>Rendfokozat</th>
+              <th>Rendszerfokozat</th>
               <th>Beosztás</th>
               <th>Nemzeti lejárata</th>
               <th>NATO lejárata</th>

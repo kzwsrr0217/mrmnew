@@ -1,6 +1,6 @@
 // mrmnew/backend/src/reports/reports.controller.ts
 
-import { Controller, Get, Query, ParseIntPipe, Optional } from '@nestjs/common';
+import { Controller, Get, Query, ParseIntPipe, Param } from '@nestjs/common'; // Param importálása
 import { ReportsService } from './reports.service';
 
 @Controller('reports')
@@ -25,5 +25,9 @@ export class ReportsController {
         @Query('systemId', new ParseIntPipe({ optional: true })) systemId?: number,
     ) {
         return this.reportsService.findAccessReport(personelId, systemId);
+    }
+        @Get('system-elements/:systemId')
+    getSystemElementsReport(@Param('systemId', ParseIntPipe) systemId: number) {
+      return this.reportsService.getSystemElementsReport(systemId);
     }
 }
