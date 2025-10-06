@@ -1,6 +1,6 @@
 // mrmnew/backend/src/personel/personel.service.ts
 
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Personel } from './personel.entity';
 import { Repository, Like } from 'typeorm';
@@ -11,6 +11,8 @@ import { UpdatePersonelDto } from './dto/update-personel.dto';
 
 @Injectable()
 export class PersonelService {
+  private readonly logger = new Logger(PersonelService.name);
+
   constructor(
     @InjectRepository(Personel) private personelRepo: Repository<Personel>,
     @InjectRepository(PersonalSecurityData) private psdRepo: Repository<PersonalSecurityData>,
@@ -143,4 +145,44 @@ export class PersonelService {
       throw error;
     }
   }
+async bulkImport(personelData: CreatePersonelDto[]): Promise<{ created: number; updated: number; errors: string[] }> {
+  let created = 0;
+  let updated = 0;
+  const errors: string[] = [];
+
+  for (const [index, personelDto] of personelData.entries()) {
+    try {
+      // Keressük a személyt a neve alapján
+      // JAVÍTVA: personelRepository -> personelRepo
+      const existingPersonel = await this.personelRepo.findOne({
+        where: { nev: personelDto.nev },
+        relations: ['personal_security_data'],
+      });
+
+      if (existingPersonel) {
+        // --- FRISSÍTÉS ---
+        this.logger.log(`Frissítés: ${personelDto.nev}`);
+
+        const psdData = Object.entries(personelDto.personal_security_data)
+          .reduce((acc, [key, value]) => (value != null ? { ...acc, [key]: value } : acc), {});
+
+        Object.assign(existingPersonel.personal_security_data, psdData);
+
+        // JAVÍTVA: personelRepository -> personelRepo
+        await this.personelRepo.save(existingPersonel);
+        updated++;
+      } else {
+        // --- LÉTREHOZÁS ---
+        this.logger.log(`Létrehozás: ${personelDto.nev}`);
+        await this.create(personelDto);
+        created++;
+      }
+    } catch (error) {
+      this.logger.error(`Hiba a(z) ${index + 1}. sor feldolgozásakor (${personelDto.nev}): ${error.message}`);
+      errors.push(`${personelDto.nev || `Ismeretlen név a ${index + 2}. Excel sorban`}: ${error.message}`);
+    }
+  }
+
+  return { created, updated, errors };
+}
 }

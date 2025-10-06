@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateMaintenanceLogDto {
   @IsInt()
@@ -8,4 +8,13 @@ export class CreateMaintenanceLogDto {
   @IsString()
   @IsNotEmpty()
   description: string;
+
+  @IsBoolean()
+  @IsOptional()
+  createTicket?: boolean;
+
+  // <-- ÚJ MEZŐ
+  @IsInt()
+  @IsOptional()
+  assignee_id?: number;
 }

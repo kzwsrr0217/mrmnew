@@ -25,5 +25,7 @@ import { SystemAccess } from '../system-access/system-access.entity';
   ],
   providers: [TicketsService, TicketAutomationService],
   controllers: [TicketsController],
+  // EZ A SOR HIÁNYZOTT
+  exports: [TicketsService],
 })
 export class TicketsModule {}

@@ -74,7 +74,7 @@ export const getMaintenanceLogs = () => {
   return apiClient.get('/maintenance');
 };
 
-export const createMaintenanceLog = (data: { system_id: number; description: string }) => {
+export const createMaintenanceLog = (data: { system_id: number; description: string; createTicket?: boolean; assignee_id?: number }) => {
   return apiClient.post('/maintenance', data);
 };
 
@@ -176,6 +176,10 @@ export const updatePersonel = (personelId: number, data: any) => {
 
 export const deletePersonel = (personelId: number) => {
   return apiClient.delete(`/personel/${personelId}`);
+};
+
+export const importPersonel = (personelData: any[]) => {
+  return apiClient.post('/personel/import', { personelData });
 };
 
 // --- Logisztika (Logistics) végpontok ---
