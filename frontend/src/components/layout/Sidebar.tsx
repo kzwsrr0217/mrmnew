@@ -55,6 +55,7 @@ export function Sidebar() {
         {isAdmin && <Link to="/admin/permits">Adatkezelési engedélyek</Link>}
         {/* --- ÚJ MENÜPONT --- */}
         {isAdmin && <Link to="/admin/classifications">Minősítési szintek</Link>}
+        {isAdmin && <Link to="/admin/backups">Adatbázis Mentések</Link>}
         <Link to="/maintenance">Karbantartás</Link>
       </nav>
     </aside>

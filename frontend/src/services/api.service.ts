@@ -347,3 +347,21 @@ export const closePortUnlockLog = (id: string) => {
 export const getSystemElementsReport = (systemId: number) => {
   return apiClient.get(`/reports/system-elements/${systemId}`);
 };
+
+// --- Backup (Mentés) Végpontok ---
+export const getBackups = () => {
+  return apiClient.get('/backups');
+};
+
+export const triggerBackupNow = () => {
+  return apiClient.post('/backups/now');
+};
+
+export const downloadBackup = (type: string, filename: string) => {
+    return apiClient.get(`/backups/download/${type}/${filename}`, {
+        responseType: 'blob', // Fontos a fájl letöltéséhez
+    });
+};
+export const getDashboardWidgets = () => {
+  return apiClient.get('/dashboard/widgets');
+};

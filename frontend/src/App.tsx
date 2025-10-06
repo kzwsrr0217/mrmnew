@@ -22,7 +22,8 @@ import { LogisticsPage } from './pages/LogisticsPage';
 import { LocationsPage } from './pages/LocationsPage';
 import { DataHandlingPermitsPage } from './pages/DataHandlingPermitsPage';
 import { ClassificationsPage } from './pages/ClassificationsPage';
-import { PortUnlockingLogPage } from './pages/PortUnlockingLogPage'; // <-- ÚJ IMPORT
+import { PortUnlockingLogPage } from './pages/PortUnlockingLogPage';
+import { BackupsPage } from './pages/BackupsPage';
 
 function App() {
   return (
@@ -47,6 +48,7 @@ function App() {
         <Route path="/admin/locations" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><LocationsPage /></MainLayout></ProtectedRoute>} />
         <Route path="/admin/permits" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><DataHandlingPermitsPage /></MainLayout></ProtectedRoute>} />
         <Route path="/admin/classifications" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><ClassificationsPage /></MainLayout></ProtectedRoute>} />
+        <Route path="/admin/backups" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><BackupsPage /></MainLayout></ProtectedRoute>} />
       </Routes>
     </AuthProvider>
   );

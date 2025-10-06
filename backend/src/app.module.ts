@@ -30,6 +30,7 @@ import { FormsModule } from './forms/forms.module';
 import { LocationsModule } from './locations/locations.module';
 import { DataHandlingPermitsModule } from './data-handling-permits/data-handling-permits.module';
 import { PortUnlockingLogModule } from './port-unlocking-log/port-unlocking-log.module'; // <-- ÚJ IMPORT
+import { BackupModule } from './backup/backup.module'; // <-- ÚJ IMPORT
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { PortUnlockingLogModule } from './port-unlocking-log/port-unlocking-log.
     LocationsModule,
     DataHandlingPermitsModule,
     PortUnlockingLogModule,
+    BackupModule, // <-- EZT A SORT ADD HOZZÁ
 
   ],
   controllers: [AppController],
