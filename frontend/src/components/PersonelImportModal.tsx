@@ -11,16 +11,9 @@ interface PersonelImportModalProps {
 // Segédfüggvény az Excel sorok átalakítására
 const transformData = (data: any[]): any[] => {
   return data.map(row => {
-    // EZ A FÜGGVÉNY VÁLTOZIK
     const transformDate = (date: any): string | undefined => {
       if (!date || !(date instanceof Date)) return undefined;
-      
-      // Korrekció az időzóna eltolódásra, hogy a helyes napot kapjuk vissza
-      // Az Excelből beolvasott dátum UTC éjfélként jön, de a new Date() helyi időzónába teszi,
-      // ami visszaléptetheti egy nappal. Ez a korrekció ezt kezeli.
       date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-
-      // Formázás 'YYYY-MM-DD' stringgé
       return date.toISOString().split('T')[0];
     };
 
@@ -36,6 +29,10 @@ const transformData = (data: any[]): any[] => {
         nato_lejarat: transformDate(row['NATO lejárat'] || row['nato_lejarat']),
         eu_datum: transformDate(row['EU dátum'] || row['eu_datum']),
         eu_lejarat: transformDate(row['EU lejárat'] || row['eu_lejarat']),
+        // --- ÚJ MEZŐK ---
+        nemzeti_szint: row['Nemzeti szint'] || row['nemzeti_szint'],
+        nato_szint: row['NATO szint'] || row['nato_szint'],
+        eu_szint: row['EU szint'] || row['eu_szint'],
       },
     };
   });

@@ -1,6 +1,4 @@
-// mrmnew/backend/src/tickets/tickets.service.ts
-
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Ticket, TicketStatus } from './ticket.entity';
@@ -12,7 +10,7 @@ import { CreateCommentDto } from './dto/create-comment.dto';
 
 @Injectable()
 export class TicketsService {
-  private readonly logger = new Logger(TicketsService.name); // <-- EZ HIÁNYZOTT
+  private readonly logger = new Logger(TicketsService.name);
 
   constructor(
     @InjectRepository(Ticket) private ticketsRepository: Repository<Ticket>,
@@ -46,20 +44,20 @@ export class TicketsService {
   findAll(): Promise<Ticket[]> {
     return this.ticketsRepository.find({
       order: { created_at: 'DESC' },
+      relations: ['assignee', 'creator'], // A felelős adatait is lekérjük a listához
     });
   }
 
   async findOne(id: number, requestingUser?: User): Promise<Ticket> {
     const ticket = await this.ticketsRepository.findOne({
       where: { ticket_id: id },
-      relations: ['comments', 'comments.author', 'assignee', 'creator'],
+      relations: ['comments', 'comments.author', 'assignee', 'creator', 'accessRequest'], // accessRequest betöltése
     });
 
     if (!ticket) {
       throw new NotFoundException(`A(z) ${id} azonosítójú ticket nem található.`);
     }
 
-    // A logika csak akkor fut le, ha a requestingUser meg van adva
     if (requestingUser && ticket.status === TicketStatus.UJ && ticket.assignee && ticket.assignee.id === requestingUser.id) {
         ticket.status = TicketStatus.FOLYAMATBAN;
         await this.ticketsRepository.save(ticket);
@@ -70,7 +68,7 @@ export class TicketsService {
   }
 
   async addComment(ticketId: number, dto: CreateCommentDto, authorPayload: { userId: number }): Promise<TicketComment> {
-    const ticket = await this.findOne(ticketId); // JAVÍTVA: A hívás már helyes, mert a 2. paraméter opcionális
+    const ticket = await this.findOne(ticketId);
     
     const author = await this.usersRepository.findOneBy({ id: authorPayload.userId });
     if (!author) {
@@ -86,15 +84,40 @@ export class TicketsService {
     return this.commentsRepository.save(newComment);
   }
 
-  async updateStatus(ticketId: number, newStatus: TicketStatus): Promise<Ticket> {
-    const ticket = await this.findOne(ticketId); // JAVÍTVA: A hívás már helyes, mert a 2. paraméter opcionális
-    ticket.status = newStatus;
-    const savedTicket = await this.ticketsRepository.save(ticket);
+    async updateStatus(id: number, status: TicketStatus, user: User): Promise<Ticket> {
+        const ticket = await this.ticketsRepository.findOne({ where: { ticket_id: id }, relations: ['assignee', 'accessRequest'] });
+        if (!ticket) {
+            throw new NotFoundException('A ticket nem található');
+        }
 
-    if (newStatus === TicketStatus.LEZART) {
-      this.eventEmitter.emit('ticket.closed', savedTicket);
+        // Ha a ticketnek nincs felelőse (kiosztatlan), és valaki módosítja a státuszát,
+        // automatikusan ő lesz a felelős.
+        if (!ticket.assignee) {
+            ticket.assignee = user;
+        }
+
+        ticket.status = status;
+        const savedTicket = await this.ticketsRepository.save(ticket);
+        
+        // Esemény kibocsátása, ha a ticketet lezárták
+        if (status === TicketStatus.LEZART) {
+            this.eventEmitter.emit('ticket.closed', savedTicket);
+        }
+        
+        return savedTicket;
     }
 
-    return savedTicket;
-  }
+    async claim(id: number, user: User): Promise<Ticket> {
+        const ticket = await this.ticketsRepository.findOne({ where: { ticket_id: id }, relations: ['assignee'] });
+        if (!ticket) {
+            throw new NotFoundException('A ticket nem található');
+        }
+        if (ticket.assignee) {
+            throw new ForbiddenException('Ezt a ticketet már valaki más felvette.');
+        }
+
+        ticket.assignee = user;
+        return this.ticketsRepository.save(ticket);
+    }
 }
+

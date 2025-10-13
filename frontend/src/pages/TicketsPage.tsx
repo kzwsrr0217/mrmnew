@@ -1,11 +1,11 @@
-// mrmnew/frontend/src/pages/TicketsPage.tsx
-
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { getTickets } from '../services/api.service';
+import { getTickets, claimTicket } from '../services/api.service';
 import { AddTicketForm } from '../components/AddTicketForm';
-import { TicketStatus, TicketPriority } from '../types';
+import { TicketStatus, TicketPriority, UserRole } from '../types';
 import { formatDateTime } from '../utils/date.utils';
+import { Modal } from '../components/Modal';
+import { useAuth } from '../auth/AuthContext';
 
 interface Ticket {
   ticket_id: number;
@@ -33,8 +33,8 @@ export function TicketsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const { user } = useAuth(); 
 
-  // --- ÚJ ÁLLAPOT A SZŰRÉSHEZ ---
   const [showClosed, setShowClosed] = useState(false);
 
 
@@ -50,10 +50,20 @@ export function TicketsPage() {
     fetchTickets();
   }, []);
 
-  // Szűrt ticketek listája a useMemo segítségével
+    const handleClaimTicket = async (e: React.MouseEvent, ticketId: number) => {
+        e.preventDefault(); 
+        try {
+            await claimTicket(ticketId);
+            fetchTickets();
+        } catch (error) {
+            console.error('Hiba a ticket felvétele közben', error);
+            alert('A ticketet nem sikerült felvenni. Lehet, hogy már valaki más megelőzött.');
+        }
+    };
+
   const filteredTickets = useMemo(() => {
     if (showClosed) {
-      return tickets; // Ha mutatjuk a lezártakat, az összeset visszaadjuk
+      return tickets; 
     }
     return tickets.filter(ticket => ticket.status !== TicketStatus.LEZART);
   }, [tickets, showClosed]);
@@ -66,7 +76,7 @@ export function TicketsPage() {
   if (loading) return <p>Feladatok betöltése...</p>;
 
   return (
-    <div>
+    <div className="page-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Feladatkezelő</h1>
         <button onClick={() => setShowAddForm(true)}>Új feladat</button>
@@ -75,25 +85,44 @@ export function TicketsPage() {
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       <div style={{ margin: '1rem 0' }}>
-        <button onClick={() => setShowClosed(!showClosed)}>
-          {showClosed ? 'Lezárt feladatok elrejtése' : 'Lezárt feladatok mutatása'}
-        </button>
+        <label>
+          <input 
+            type="checkbox" 
+            checked={showClosed} 
+            onChange={() => setShowClosed(!showClosed)} 
+          />
+          Lezárt feladatok mutatása
+        </label>
       </div>
 
       <div className="card-grid">
         {filteredTickets.map(ticket => (
-            <Link to={`/tickets/${ticket.ticket_id}`} key={ticket.ticket_id} style={{textDecoration: 'none', color: 'inherit'}}>
-                <div className={`card ${getPriorityClass(ticket.priority)}`}>
-                    <h3>#{ticket.ticket_id} - {ticket.title}</h3>
-                    <p><strong>Státusz:</strong> {ticket.status}</p>
-                    <p><strong>Felelős:</strong> {ticket.assignee?.username || 'N/A'}</p>
-                    <p><strong>Létrehozva:</strong> {formatDateTime(ticket.created_at)}</p>
-                </div>
+            <Link to={`/tickets/${ticket.ticket_id}`} key={ticket.ticket_id} className={`card ${getPriorityClass(ticket.priority)}`}>
+                <h3>#{ticket.ticket_id} - {ticket.title}</h3>
+                <p><strong>Státusz:</strong> {ticket.status}</p>
+                <p><strong>Felelős:</strong> 
+                  {ticket.assignee ? ticket.assignee.username : 
+                      (user?.role === UserRole.RA || user?.role === UserRole.ADMIN ? 
+                          <button className="claim-button" onClick={(e) => handleClaimTicket(e, ticket.ticket_id)}>
+                              Felveszem
+                          </button> 
+                          : 'Kiosztatlan')
+                  }
+                </p>
+                <p><strong>Létrehozva:</strong> {formatDateTime(ticket.created_at)}</p>
             </Link>
         ))}
       </div>
-
-      {showAddForm && <AddTicketForm onTicketAdded={handleTicketAdded} onCancel={() => setShowAddForm(false)} />}
+      
+      {showAddForm && (
+        <Modal onClose={() => setShowAddForm(false)}>
+            <AddTicketForm 
+                onSuccess={handleTicketAdded} 
+                onCancel={() => setShowAddForm(false)} 
+            />
+        </Modal>
+      )}
     </div>
   );
 }
+

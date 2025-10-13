@@ -60,9 +60,11 @@ export const addComment = (ticketId: number, text: string) => {
   return apiClient.post(`/tickets/${ticketId}/comments`, { text });
 };
 
-export const updateTicketStatus = (ticketId: number, status: string) => {
-  return apiClient.patch(`/tickets/${ticketId}/status`, { status });
-};
+export const updateTicketStatus = (id: number, status: string) => apiClient.patch(`/tickets/${id}/status`, { status });
+
+export const claimTicket = (id: number) => apiClient.patch(`/tickets/${id}/claim`);
+
+
 
 // --- Naplózás (Audit) végpontok ---
 export const getAuditLogs = () => {

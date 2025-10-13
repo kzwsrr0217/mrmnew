@@ -146,43 +146,84 @@ export class PersonelService {
     }
   }
 async bulkImport(personelData: CreatePersonelDto[]): Promise<{ created: number; updated: number; errors: string[] }> {
-  let created = 0;
-  let updated = 0;
-  const errors: string[] = [];
+    let created = 0;
+    let updated = 0;
+    const errors: string[] = [];
 
-  for (const [index, personelDto] of personelData.entries()) {
-    try {
-      // Keressük a személyt a neve alapján
-      // JAVÍTVA: personelRepository -> personelRepo
-      const existingPersonel = await this.personelRepo.findOne({
-        where: { nev: personelDto.nev },
-        relations: ['personal_security_data'],
-      });
+    const classifications = await this.classificationRepo.find();
+    const classificationMap = new Map<string, number>();
+    classifications.forEach(c => {
+      const key = `${c.type.trim().toUpperCase()} ${c.level_name.trim().toUpperCase()}`;
+      classificationMap.set(key, c.id);
+    });
 
-      if (existingPersonel) {
-        // --- FRISSÍTÉS ---
-        this.logger.log(`Frissítés: ${personelDto.nev}`);
-
-        const psdData = Object.entries(personelDto.personal_security_data)
-          .reduce((acc, [key, value]) => (value != null ? { ...acc, [key]: value } : acc), {});
-
-        Object.assign(existingPersonel.personal_security_data, psdData);
-
-        // JAVÍTVA: personelRepository -> personelRepo
-        await this.personelRepo.save(existingPersonel);
-        updated++;
-      } else {
-        // --- LÉTREHOZÁS ---
-        this.logger.log(`Létrehozás: ${personelDto.nev}`);
-        await this.create(personelDto);
-        created++;
-      }
-    } catch (error) {
-      this.logger.error(`Hiba a(z) ${index + 1}. sor feldolgozásakor (${personelDto.nev}): ${error.message}`);
-      errors.push(`${personelDto.nev || `Ismeretlen név a ${index + 2}. Excel sorban`}: ${error.message}`);
+    // --- JAVÍTOTT DIAGNOSZTIKAI LOG ---
+    this.logger.log('--- Betöltött minősítési szintek (kulcs: ID) ---');
+    if (classificationMap.size === 0) {
+        this.logger.warn('A "classificationMap" ÜRES! Nem lett egyetlen minősítési szint sem betöltve az adatbázisból. Ellenőrizd a "classification_levels" tábla tartalmát!');
+        errors.push('HIBA: Nincsenek minősítési szintek az adatbázisban, az importálás nem lehetséges.');
+        // Leállítjuk a feldolgozást, ha nincsenek szintek
+        return { created, updated, errors };
     }
-  }
+    // A Map tartalmának helyes kiíratása
+    for (const [key, value] of classificationMap.entries()) {
+      this.logger.log(`'${key}': ${value}`);
+    }
+    this.logger.log('----------------------------------------------------');
 
-  return { created, updated, errors };
+
+    for (const [index, personelDto] of personelData.entries()) {
+      try {
+        const psd = personelDto.personal_security_data;
+
+        if (psd.nemzeti_szint) {
+          const lookupKey = psd.nemzeti_szint.trim().toUpperCase();
+          const id = classificationMap.get(lookupKey);
+          if (id) psd.nemzeti_szint_id = id;
+          else errors.push(`${personelDto.nev}: Ismeretlen Nemzeti szint: '${psd.nemzeti_szint}'`);
+          delete psd.nemzeti_szint;
+        }
+
+        if (psd.nato_szint) {
+          const lookupKey = psd.nato_szint.trim().toUpperCase();
+          const id = classificationMap.get(lookupKey);
+          if (id) psd.nato_szint_id = id;
+          else errors.push(`${personelDto.nev}: Ismeretlen NATO szint: '${psd.nato_szint}'`);
+          delete psd.nato_szint;
+        }
+
+        if (psd.eu_szint) {
+          const lookupKey = psd.eu_szint.trim().toUpperCase();
+          const id = classificationMap.get(lookupKey);
+          if (id) psd.eu_szint_id = id;
+          else errors.push(`${personelDto.nev}: Ismeretlen EU szint: '${psd.eu_szint}'`);
+          delete psd.eu_szint;
+        }
+        
+        const existingPersonel = await this.personelRepo.findOne({
+          where: { nev: personelDto.nev },
+          relations: ['personal_security_data'],
+        });
+
+        if (existingPersonel) {
+          this.logger.log(`Frissítés: ${personelDto.nev}`);
+          const psdData = Object.entries(psd)
+            .reduce((acc, [key, value]) => (value != null ? { ...acc, [key]: value } : acc), {});
+
+          Object.assign(existingPersonel.personal_security_data, psdData);
+          await this.personelRepo.save(existingPersonel);
+          updated++;
+        } else {
+          this.logger.log(`Létrehozás: ${personelDto.nev}`);
+          await this.create(personelDto);
+          created++;
+        }
+      } catch (error) {
+        this.logger.error(`Hiba a(z) ${index + 1}. sor feldogozásakor (${personelDto.nev}): ${error.message}`);
+        errors.push(`${personelDto.nev || `Ismeretlen név a ${index + 2}. Excel sorban`}: ${error.message}`);
+      }
+    }
+    return { created, updated, errors };
 }
 }
+
