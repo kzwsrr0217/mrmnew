@@ -1,12 +1,13 @@
-// frontend/src/components/GrantAccessForm.tsx
+// mrmnew/frontend/src/components/GrantAccessForm.tsx
 
 import { useState, useEffect, FormEvent } from 'react';
 import { getSystems, getPersonel, grantAccess } from '../services/api.service';
 import { AccessLevel } from '../types';
+import AsyncSelect from 'react-select/async'; // <-- ÚJ IMPORT
 
-interface Personel {
-  personel_id: number;
-  nev: string;
+interface PersonelOption {
+  value: number;
+  label: string;
 }
 
 interface System {
@@ -20,27 +21,32 @@ interface GrantAccessFormProps {
 }
 
 export function GrantAccessForm({ onAccessGranted, onCancel }: GrantAccessFormProps) {
-  const [personel, setPersonel] = useState<Personel[]>([]);
   const [systems, setSystems] = useState<System[]>([]);
-  
-  const [selectedPersonelId, setSelectedPersonelId] = useState<string>('');
+  const [selectedPersonel, setSelectedPersonel] = useState<PersonelOption | null>(null);
   const [selectedSystemId, setSelectedSystemId] = useState<string>('');
   const [selectedAccessLevel, setSelectedAccessLevel] = useState<AccessLevel>(AccessLevel.USER);
-
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getPersonel(), getSystems()])
-      .then(([personelRes, systemsRes]) => {
-        setPersonel(personelRes.data);
-        setSystems(systemsRes.data);
-      })
-      .catch(() => setError('A személyek vagy rendszerek betöltése sikertelen.'));
+    getSystems()
+      .then(res => setSystems(res.data))
+      .catch(() => setError('A rendszerek betöltése sikertelen.'));
   }, []);
+
+  // Ez a függvény tölti be az opciókat a kereshető listába
+  const loadPersonelOptions = (inputValue: string, callback: (options: PersonelOption[]) => void) => {
+    getPersonel(inputValue).then(res => {
+      const options = res.data.map((p: { personel_id: number; nev: string }) => ({
+        value: p.personel_id,
+        label: p.nev,
+      }));
+      callback(options);
+    });
+  };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!selectedPersonelId || !selectedSystemId) {
+    if (!selectedPersonel || !selectedSystemId) {
         setError('Kérem válasszon személyt és rendszert!');
         return;
     }
@@ -48,7 +54,7 @@ export function GrantAccessForm({ onAccessGranted, onCancel }: GrantAccessFormPr
 
     try {
       await grantAccess({
-        personelId: Number(selectedPersonelId),
+        personelId: selectedPersonel.value,
         systemId: Number(selectedSystemId),
         accessLevel: selectedAccessLevel,
       });
@@ -67,10 +73,14 @@ export function GrantAccessForm({ onAccessGranted, onCancel }: GrantAccessFormPr
           
           <div>
             <label>Személy:</label>
-            <select value={selectedPersonelId} onChange={e => setSelectedPersonelId(e.target.value)} required>
-              <option value="">Válasszon...</option>
-              {personel.map(p => <option key={p.personel_id} value={p.personel_id}>{p.nev}</option>)}
-            </select>
+            <AsyncSelect
+              cacheOptions
+              defaultOptions
+              loadOptions={loadPersonelOptions}
+              value={selectedPersonel}
+              onChange={(option) => setSelectedPersonel(option as PersonelOption)}
+              placeholder="Kezdje el gépelni a nevet..."
+            />
           </div>
           
           <div>

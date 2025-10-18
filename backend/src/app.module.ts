@@ -29,6 +29,8 @@ import { LogisticsModule } from './logistics/logistics.module';
 import { FormsModule } from './forms/forms.module';
 import { LocationsModule } from './locations/locations.module';
 import { DataHandlingPermitsModule } from './data-handling-permits/data-handling-permits.module';
+import { PortUnlockingLogModule } from './port-unlocking-log/port-unlocking-log.module'; // <-- ÚJ IMPORT
+import { BackupModule } from './backup/backup.module'; // <-- ÚJ IMPORT
 
 @Module({
   imports: [
@@ -66,7 +68,10 @@ import { DataHandlingPermitsModule } from './data-handling-permits/data-handling
     LogisticsModule,
     FormsModule,
     LocationsModule,
-    DataHandlingPermitsModule
+    DataHandlingPermitsModule,
+    PortUnlockingLogModule,
+    BackupModule, // <-- EZT A SORT ADD HOZZÁ
+
   ],
   controllers: [AppController],
   providers: [AppService],

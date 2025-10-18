@@ -61,29 +61,22 @@ export class AccessRequestsService {
         if (request.status !== RequestStatus.BV_JOVAHAGYASRA_VAR) {
             throw new ForbiddenException('Ez a kérelem nem hagyható jóvá ebben az állapotban.');
         }
-        
-        // 1. Kérelem státuszának módosítása
+                // 1. Kérelem státuszának módosítása
         request.status = RequestStatus.ENGEDELYEZVE;
         request.bv_approver = approver;
         await this.requestRepo.save(request);
-
-        // 2. RA felhasználó megkeresése
-        const raUser = await this.userRepo.findOne({ where: { role: UserRole.RA } });
-        if (!raUser) {
-            this.logger.warn('Nincs RA szerepkörű felhasználó, akinek a ticketet ki lehetne osztani.');
-            throw new NotFoundException('Rendszeradminisztrátor nem található a feladat kiosztásához.');
-        }
-
-        // 3. Új TICKET létrehozása az RA számára
+        // 2. Új, kiosztatlan TICKET létrehozása az RA CSOPORT számára
+        // Ahelyett, hogy egy konkrét RA-hoz rendelnénk (pl. findOne), a ticketet
+        // "szabad prédaként" hozzuk létre. Az `assignee` mezőt szándékosan üresen (null) hagyjuk.
+        // Ezáltal a feladat egy közös "várólistára" kerül, amelyet minden RA lát.
         const ticketTitle = `[HOZZÁFÉRÉS] ${request.personel.nev} - ${request.system.systemname}`;
         const newTicket = this.ticketRepo.create({
             title: ticketTitle,
             description: `Új hozzáférés beállítása szükséges.\nSzemély: ${request.personel.nev}\nRendszer: ${request.system.systemname}\nJogosultság: ${request.access_level}`,
             priority: TicketPriority.MAGAS,
-            assignee: raUser,
+            assignee: null, // <-- A MEGOLDÁS: A ticket nincs senkihez rendelve
             accessRequest: request, // Összekötjük a ticketet a kérelemmel
         });
-
         return this.ticketRepo.save(newTicket);
     }
 

@@ -1,20 +1,19 @@
-// mrmnew/backend/src/tickets/tickets.controller.ts
-
-import { Controller, Get, Post, Body, Param, UseGuards, Request, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, Patch, ParseIntPipe, NotFoundException } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CreateCommentDto } from './dto/create-comment.dto'; // ÚJ IMPORT
-import { UpdateStatusDto } from './dto/update-status.dto'; // ÚJ IMPORT
+import { CreateCommentDto } from './dto/create-comment.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
+import { Roles } from 'src/auth/roles.decorator'; // <-- JAVÍTÁS: Hiányzó import hozzáadva
+import { UserRole } from 'src/users/user.entity';   // <-- JAVÍTÁS: Hiányzó import hozzáadva
+import { RolesGuard } from 'src/auth/roles.guard';   // <-- JAVÍTÁS: RolesGuard importálása a használathoz
 
 @Controller('tickets')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard) // A RolesGuard-ot csak ott használjuk, ahol tényleg kell
 export class TicketsController {
   constructor(private readonly ticketsService: TicketsService) {}
 
   @Post()
-  // JAVÍTÁS: Itt adjuk meg a 'req' paraméter típusát.
-  // A JwtStrategy a 'user' objektumot csatolja a kéréshez.
   create(@Body() createTicketDto: CreateTicketDto, @Request() req: { user: any }) {
     return this.ticketsService.create(createTicketDto, req.user);
   }
@@ -25,24 +24,33 @@ export class TicketsController {
   }
 
   @Get(':id')
-   findOne(@Param('id') id: string, @Request() req: any) {
-      return this.ticketsService.findOne(+id, req.user); // req.user átadása
+  findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) { // JAVÍTÁS: ParseIntPipe használata itt is
+      return this.ticketsService.findOne(id, req.user);
   }
-  
+ 
   @Post(':id/comments')
   addComment(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number, // JAVÍTÁS: ParseIntPipe használata itt is
     @Body() createCommentDto: CreateCommentDto,
     @Request() req: { user: any },
   ) {
-    return this.ticketsService.addComment(+id, createCommentDto, req.user);
+    return this.ticketsService.addComment(id, createCommentDto, req.user);
   }
 
   @Patch(':id/status')
-  updateStatus(
-    @Param('id') id: string,
-    @Body() updateStatusDto: UpdateStatusDto,
-  ) {
-    return this.ticketsService.updateStatus(+id, updateStatusDto.status);
-  }
+    updateStatus(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() updateStatusDto: UpdateStatusDto,
+        @Request() req: any
+    ) {
+        return this.ticketsService.updateStatus(id, updateStatusDto.status, req.user);
+    }
+    
+    @Patch(':id/claim')
+    @UseGuards(RolesGuard) // A RolesGuard-ot csak ezen a specifikus végponton alkalmazzuk
+    @Roles(UserRole.RA, UserRole.ADMIN) // Csak RA vagy Admin vehet fel ticketet
+    claimTicket(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
+        return this.ticketsService.claim(id, req.user);
+    }
 }
+

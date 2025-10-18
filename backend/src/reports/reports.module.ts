@@ -1,5 +1,3 @@
-// mrmnew/backend/src/reports/reports.module.ts
-
 import { Module } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { ReportsController } from './reports.controller';
@@ -8,8 +6,9 @@ import { Personel } from '../personel/personel.entity';
 import { PersonalSecurityData } from '../personal-security-data/personal-security-data.entity';
 import { SystemPermit } from 'src/system-permits/system-permit.entity';
 import { System } from 'src/systems/system.entity';
-import { SystemAccess } from 'src/system-access/system-access.entity'; // <-- ÚJ IMPORT
-
+import { SystemAccess } from 'src/system-access/system-access.entity';
+import { Hardware } from 'src/hardware/hardware.entity';
+import { User } from 'src/users/user.entity';
 
 @Module({
   imports: [
@@ -18,10 +17,16 @@ import { SystemAccess } from 'src/system-access/system-access.entity'; // <-- Ú
       PersonalSecurityData,
       SystemPermit,
       System,
-      SystemAccess, // <-- ÚJ IMPORT
+      SystemAccess,
+      Hardware,
+      User,
     ])
   ],
   providers: [ReportsService],
-  controllers: [ReportsController]
+  controllers: [ReportsController],
+  // ==================== A JAVÍTÁS ====================
+  // Ezzel tesszük a ReportsService-t elérhetővé más modulok számára.
+  exports: [ReportsService],
+  // ===================================================
 })
 export class ReportsModule {}

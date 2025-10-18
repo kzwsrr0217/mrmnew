@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setNotifications(res.data);
       } catch (error) {
         console.error("Értesítések betöltése sikertelen", error);
-        setNotifications({ openTickets: [], pendingApprovals: [] }); // Hiba esetén is legyen alapértelmezett érték
+        setNotifications({ openTickets: [], pendingApprovals: [] }); 
       }
     }
   };
@@ -49,10 +49,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchNotifications();
   }, [isAuthenticated]);
 
-  const login = (token: string, userData: User) => {
+  const login = (token: string, userData: any) => {
     localStorage.setItem('access_token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
+    const userToStore = {
+      id: userData.id,
+      username: userData.username,
+      role: userData.role,
+    };
+    localStorage.setItem('user', JSON.stringify(userToStore));
+    setUser(userToStore);
+    
   };
 
   const logout = () => {

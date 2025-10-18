@@ -1,16 +1,22 @@
-// mrm-backend/src/documents/documents.controller.ts
+// mrmnew/backend/src/documents/documents.controller.ts
 
-import { Controller, Post, Body, UploadedFile, UseInterceptors, Get, Param, StreamableFile, Res, Delete, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, UploadedFile, UseInterceptors, Get, Param, StreamableFile, Res, Delete, HttpCode, HttpStatus, BadRequestException, UseGuards, Req, NotFoundException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { DocumentType } from './document.entity';
-import type { Response } from 'express';
+import type { Response, Request } from 'express';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { UsersService } from 'src/users/users.service';
 
 @Controller('documents')
+@UseGuards(JwtAuthGuard)
 export class DocumentsController {
-  constructor(private readonly documentsService: DocumentsService) {}
+  constructor(
+    private readonly documentsService: DocumentsService,
+    private readonly usersService: UsersService, 
+  ) {}
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file', {
@@ -22,24 +28,30 @@ export class DocumentsController {
       },
     }),
   }))
-  uploadFile(
+  async uploadFile(
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: any, // A @Body-t általános 'any' típusként fogadjuk, hogy kikerüljük a validációt
+    @Body() body: any,
+    @Req() req: any,
   ) {
-    // Manuálisan létrehozzuk és validáljuk a DTO-t
+    // A hívás most már a létező 'findOneById' metódusra mutat
+    const uploader = await this.usersService.findOneById(req.user.id);
+    if (!uploader) {
+        throw new NotFoundException('A feltöltő felhasználó nem található.');
+    }
+
     const dto = new CreateDocumentDto();
     dto.system_id = Number(body.system_id);
     dto.type = body.type;
     dto.registration_number = body.registration_number;
-    // Itt további validációt is végezhetnénk, ha szükséges
 
     if (!file && (dto.type === DocumentType.RENDSZERENGEDELY || dto.type === DocumentType.UBSZ)) {
       throw new BadRequestException('Ehhez a dokumentumtípushoz kötelező fájlt csatolni.');
     }
 
-    return this.documentsService.create(dto, file?.path);
+    return this.documentsService.create(dto, uploader, file?.path);
   }
-
+  
+  // ... (a többi controller metódus változatlan)
   @Get('for-system/:systemId')
   findAllForSystem(@Param('systemId') systemId: string) {
     return this.documentsService.findAllForSystem(+systemId);

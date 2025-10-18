@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common'; // <-- Query importálása
 import { PersonelService } from './personel.service';
 import { CreatePersonelDto } from './dto/create-personel.dto';
 import { UpdatePersonelDto } from './dto/update-personel.dto';
+import { ImportPersonelDto } from './dto/import-personel.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard'; // Fontos importok
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
@@ -19,11 +20,9 @@ export class PersonelController {
   }
 
   @Get()
-  // A GET végpontokat minden bejelentkezett felhasználó elérheti (nincs @Roles dekorátor)
-  findAll() {
-    return this.personelService.findAll();
+  findAll(@Query('search') search?: string) {
+    return this.personelService.findAll(search);
   }
-
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.personelService.findOne(+id);
@@ -40,4 +39,10 @@ export class PersonelController {
   remove(@Param('id') id: string) {
     return this.personelService.remove(+id);
   }
+
+@Post('import')
+@Roles(UserRole.ADMIN) // Csak adminisztrátorok érhessék el
+async bulkImport(@Body() importDto: ImportPersonelDto) {
+  return this.personelService.bulkImport(importDto.personelData);
+}
 }

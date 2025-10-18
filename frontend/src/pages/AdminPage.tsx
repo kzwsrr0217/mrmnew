@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getUsers, updateUserRole, resetUserPassword } from '../services/api.service';
 import { UserRole } from '../types';
+import { AddUserForm } from '../components/AddUserForm'; // <-- ÚJ IMPORT
 
 interface User {
   id: number;
@@ -14,6 +15,9 @@ export function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // --- ÚJ ÁLLAPOT A MODÁLIS ABLAKHOZ ---
+  const [showAddUserForm, setShowAddUserForm] = useState(false);
 
   const fetchUsers = () => {
     setLoading(true);
@@ -31,7 +35,7 @@ export function AdminPage() {
     if (!window.confirm(`Biztosan módosítja a felhasználó szerepkörét erre: ${newRole}?`)) return;
     try {
       await updateUserRole(userId, newRole);
-      fetchUsers(); // Frissítjük a listát
+      fetchUsers();
     } catch (err) {
       alert('Hiba a szerepkör módosítása közben.');
     }
@@ -50,12 +54,22 @@ export function AdminPage() {
       alert('Hiba a jelszó módosítása közben.');
     }
   };
+  
+  const handleUserAdded = () => {
+    setShowAddUserForm(false);
+    fetchUsers(); // Frissítjük a listát az új felhasználóval
+  };
 
   if (loading) return <p>Betöltés...</p>;
 
   return (
     <div>
-      <h1>Adminisztráció / Felhasználókezelés</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h1>Adminisztráció / Felhasználókezelés</h1>
+        {/* --- ÚJ GOMB --- */}
+        <button onClick={() => setShowAddUserForm(true)}>+ Új felhasználó</button>
+      </div>
+
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       <table className="personel-table">
@@ -88,6 +102,14 @@ export function AdminPage() {
           ))}
         </tbody>
       </table>
+      
+      {/* --- ÚJ RÉSZ: A MODÁLIS ABLAK MEGJELENÍTÉSE --- */}
+      {showAddUserForm && (
+        <AddUserForm 
+          onUserAdded={handleUserAdded} 
+          onCancel={() => setShowAddUserForm(false)} 
+        />
+      )}
     </div>
   );
 }

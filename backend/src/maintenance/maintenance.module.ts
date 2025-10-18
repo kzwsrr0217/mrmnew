@@ -1,18 +1,18 @@
-// mrmnew/backend/src/maintenance/maintenance.module.ts
-
 import { Module } from '@nestjs/common';
-import { MaintenanceService } from './maintenance.service';
-import { MaintenanceController } from './maintenance.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MaintenanceLog } from './maintenance-log.entity';
-import { System } from '../systems/system.entity';
-import { User } from '../users/user.entity'; // Import the User entity
+import { MaintenanceController } from './maintenance.controller';
+import { MaintenanceService } from './maintenance.service';
+import { System } from 'src/systems/system.entity';
+import { User } from 'src/users/user.entity';
+import { TicketsModule } from 'src/tickets/tickets.module'; // <-- IMPORTÁLÁS
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([MaintenanceLog, System, User]) // Add User here
+    TypeOrmModule.forFeature([MaintenanceLog, System, User]),
+    TicketsModule, // <-- HOZZÁADÁS AZ IMPORTOKHOZ
   ],
-  providers: [MaintenanceService],
   controllers: [MaintenanceController],
+  providers: [MaintenanceService],
 })
 export class MaintenanceModule {}

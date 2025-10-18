@@ -1,5 +1,4 @@
 // mrmnew/backend/src/data-handling-permits/dto/create-data-handling-permit.dto.ts
-
 import { IsString, IsNotEmpty, IsEnum, IsOptional, IsArray, IsInt } from 'class-validator';
 import { SecurityClass } from '../data-handling-permit.entity';
 
@@ -16,9 +15,11 @@ export class CreateDataHandlingPermitDto {
   @IsOptional()
   notes?: string;
 
-  @IsInt()
-  @IsNotEmpty()
-  location_id: number;
+  // --- JAVÍTVA: locationId -> locationIds ---
+  @IsArray()
+  @IsInt({ each: true })
+  @IsNotEmpty({ message: 'Legalább egy helyszínt meg kell adni.' })
+  locationIds: number[]; // 'locationId'-ből 'locationIds' lett, és tömböt vár
 
   @IsArray()
   @IsInt({ each: true })

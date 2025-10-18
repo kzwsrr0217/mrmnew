@@ -1,6 +1,6 @@
-// mrm-backend/src/hardware/dto/create-hardware.dto.ts
+// mrmnew/backend/src/hardware/dto/create-hardware.dto.ts
 
-import { IsArray, IsBoolean, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, ValidateIf } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsInt, IsBoolean, IsEnum, ValidateIf, IsArray } from 'class-validator';
 import { HardwareType, WorkstationType, StorageType, TempestLevel } from '../hardware.entity';
 
 export class CreateHardwareDto {
@@ -9,71 +9,74 @@ export class CreateHardwareDto {
   type: HardwareType;
 
   @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  manufacturer?: string;
-
-  @IsString()
   @IsNotEmpty()
-  @MaxLength(255)
   model_name: string;
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(255)
   serial_number: string;
-  
+
+  @IsString()
+  @IsOptional()
+  manufacturer?: string;
+
   @IsString()
   @IsOptional()
   notes?: string;
   
-  // --- TEMPEST DTO Rész ---
+  @IsInt()
+  @IsNotEmpty()
+  system_id: number;
+
+  // JAVÍTVA: locationId -> location
+  @IsInt()
+  @IsOptional()
+  location?: number; 
+
   @IsBoolean()
   @IsOptional()
   is_tempest?: boolean;
 
-  @ValidateIf(o => o.is_tempest === true)
   @IsEnum(TempestLevel)
-  @IsNotEmpty({ message: 'TEMPEST szint megadása kötelező, ha az eszköz TEMPEST-es.' })
-  tempest_level: TempestLevel;
-
   @ValidateIf(o => o.is_tempest === true)
+  @IsNotEmpty({ message: 'A TEMPEST szint megadása kötelező, ha az eszköz minősített.' })
+  tempest_level?: TempestLevel;
+
   @IsString()
-  @IsNotEmpty({ message: 'TEMPEST tanúsítványszám megadása kötelező, ha az eszköz TEMPEST-es.' })
-  tempest_cert_number: string;
+  @ValidateIf(o => o.is_tempest === true)
+  @IsNotEmpty({ message: 'A TEMPEST tanúsítványszám megadása kötelező, ha az eszköz minősített.' })
+  tempest_cert_number?: string;
 
   @IsString()
   @IsOptional()
   tempest_number?: string;
   
-  // --- Típus-specifikus DTO részek ---
   @IsEnum(WorkstationType)
-  @IsOptional()
+  @ValidateIf(o => o.type === HardwareType.MUNKAALLOMAS)
+  @IsNotEmpty({ message: 'A munkaállomás jellegének megadása kötelező.' })
   workstation_type?: WorkstationType;
-  
+
   @IsString()
   @IsOptional()
-  @MaxLength(100)
   inventory_number?: string;
   
-  @IsInt()
+  @IsInt({ message: 'A méretnek egész számnak kell lennie.' })
+  @ValidateIf(o => o.type === HardwareType.ADATTAROLO)
   @IsOptional()
   storage_size_gb?: number;
 
   @IsEnum(StorageType)
-  @IsOptional()
+  @ValidateIf(o => o.type === HardwareType.ADATTAROLO)
+  @IsNotEmpty({ message: 'Az adattároló technológiájának megadása kötelező.' })
   storage_type?: StorageType;
 
-  @IsInt()
-  @IsNotEmpty()
-  system_id: number;
+  @IsInt({ message: 'A szülő eszköz ID-jának egész számnak kell lennie.' })
+  @ValidateIf(o => o.type === HardwareType.ADATTAROLO)
+  @IsOptional()
+  parent_hardware_id?: number;
 
   @IsArray()
   @IsInt({ each: true })
   @IsOptional()
   classification_ids?: number[];
-
-  @IsInt()
-  @IsOptional()
-  parent_hardware_id?: number;
 }

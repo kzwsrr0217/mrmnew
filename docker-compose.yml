@@ -14,17 +14,25 @@ services:
     build:
       context: ./backend
     container_name: mrm-backend
-
     ports:
       - "3000:3000"
     volumes:
       - ./backend:/usr/src/app
-      # EZ A JAVÍTÁS: Megvédi a node_modules mappát a konténerben
       - /usr/src/app/node_modules
+      # ==================== JAVÍTÁS 1 ====================
+      # A belső útvonalnak meg kell egyeznie a WORKDIR-rel.
+      - ./db_backups:/usr/src/app/db_backups
     depends_on:
       - db
     environment:
-      DATABASE_URL: mysql://root:rootpassword@db:3306/mrmdb
+      # A meglévő DATABASE_URL változatlan
+      - DATABASE_URL=mysql://root:rootpassword@db:3306/mrmdb
+      # ==================== JAVÍTÁS 2 ====================
+      # Új változók a backup service számára, hogy tudjon csatlakozni.
+      - MYSQL_HOST=db
+      - MYSQL_DATABASE=mrmdb
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=rootpassword
 
   frontend:
     build:
@@ -34,10 +42,24 @@ services:
       - "5173:5173"
     volumes:
       - ./frontend:/usr/src/app
-      # EZ A JAVÍTÁS: Megvédi a node_modules mappát a konténerben
       - /usr/src/app/node_modules
     depends_on:
       - backend
+
+  backup:
+    build: ./backup
+    container_name: mrm-backup
+    restart: unless-stopped
+    volumes:
+      - ./db_backups:/backups
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_DATABASE=mrmdb
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=rootpassword
+      - CRON_SCHEDULE=0 3 * * *
+    depends_on:
+      - db
 
 volumes:
   db_data:

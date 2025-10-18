@@ -13,15 +13,12 @@ export class RolesGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    
-    // Ha egy végponthoz nincs szerepkör megadva, akkor mindenki hozzáférhet
+        // Ha egy végponthoz nincs szerepkör megadva, akkor mindenki hozzáférhet
     if (!requiredRoles) {
       return true;
     }
-
     // A bejelentkezett felhasználó adatainak lekérdezése a requestből
     const { user } = context.switchToHttp().getRequest();
-    
     // Ellenőrizzük, hogy a felhasználó szerepköre benne van-e a szükséges szerepkörök listájában
     return requiredRoles.some((role) => user.role === role);
   }

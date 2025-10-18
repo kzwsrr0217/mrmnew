@@ -21,6 +21,9 @@ import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { LogisticsPage } from './pages/LogisticsPage';
 import { LocationsPage } from './pages/LocationsPage';
 import { DataHandlingPermitsPage } from './pages/DataHandlingPermitsPage';
+import { ClassificationsPage } from './pages/ClassificationsPage';
+import { PortUnlockingLogPage } from './pages/PortUnlockingLogPage';
+import { BackupsPage } from './pages/BackupsPage';
 
 function App() {
   return (
@@ -38,11 +41,14 @@ function App() {
         <Route path="/pending-requests" element={<ProtectedRoute roles={[UserRole.BV, UserRole.HBV, UserRole.HHBV, UserRole.SZBF]}><MainLayout><PendingRequestsPage /></MainLayout></ProtectedRoute>} />
         <Route path="/maintenance" element={<ProtectedRoute><MainLayout><MaintenancePage /></MainLayout></ProtectedRoute>} />
         <Route path="/logistics" element={<ProtectedRoute><MainLayout><LogisticsPage /></MainLayout></ProtectedRoute>} />
+        <Route path="/port-unlocking-log" element={<ProtectedRoute><MainLayout><PortUnlockingLogPage /></MainLayout></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><AdminPage /></MainLayout></ProtectedRoute>} />
         <Route path="/audit" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><AuditLogPage /></MainLayout></ProtectedRoute>} />
         <Route path="/admin/dashboard" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><AdminDashboardPage /></MainLayout></ProtectedRoute>} />
         <Route path="/admin/locations" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><LocationsPage /></MainLayout></ProtectedRoute>} />
         <Route path="/admin/permits" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><DataHandlingPermitsPage /></MainLayout></ProtectedRoute>} />
+        <Route path="/admin/classifications" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><ClassificationsPage /></MainLayout></ProtectedRoute>} />
+        <Route path="/admin/backups" element={<ProtectedRoute roles={[UserRole.ADMIN]}><MainLayout><BackupsPage /></MainLayout></ProtectedRoute>} />
       </Routes>
     </AuthProvider>
   );

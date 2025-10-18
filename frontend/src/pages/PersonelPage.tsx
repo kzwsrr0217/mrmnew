@@ -1,5 +1,3 @@
-// mrmnew/frontend/src/pages/PersonelPage.tsx
-
 import { useState, useEffect, Fragment } from 'react';
 import { getPersonel, deletePersonel } from '../services/api.service';
 import { AddPersonelForm } from '../components/AddPersonelForm';
@@ -8,6 +6,7 @@ import { useAuth } from '../auth/AuthContext';
 import { UserRole } from '../types';
 import { useTableControls } from '../hooks/useTableControls';
 import { formatDate } from '../utils/date.utils';
+import { PersonelImportModal } from '../components/PersonelImportModal'; // <-- ÚJ IMPORT
 
 interface Personel {
   personel_id: number;
@@ -53,6 +52,7 @@ export function PersonelPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingPersonel, setEditingPersonel] = useState<Personel | null>(null);
   const [expandedRowId, setExpandedRowId] = useState<number | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false); // <-- ÚJ STATE
 
   const canModify = user?.role === UserRole.ADMIN || user?.role === UserRole.SZBF;
 
@@ -88,13 +88,21 @@ export function PersonelPage() {
     fetchPersonel();
   };
 
+  // --- EZ A FÜGGVÉNY MÓDOSULT ---
   const handleDelete = async (personelId: number) => {
     if (window.confirm('Biztosan törli ezt a személyt?')) {
         try {
             await deletePersonel(personelId);
             fetchPersonel();
-        } catch (err) {
-            alert('A törlés sikertelen.');
+        } catch (err: any) { // Típus any, hogy hozzáférjünk a response-hoz
+            if (err.response && err.response.status === 409) {
+                // Specifikus hibaüzenet a backendtől, ha a státuszkód 409 (Conflict)
+                alert(err.response.data.message);
+            } else {
+                // Általános hibaüzenet minden más esetre
+                alert('A törlés sikertelen.');
+                console.error("Törlési hiba:", err); // Logoljuk a részletes hibát a konzolra
+            }
         }
     }
   }
@@ -107,6 +115,10 @@ export function PersonelPage() {
     if (!sortConfig || sortConfig.key !== key) return <span className="sort-icon">↕️</span>;
     return sortConfig.direction === 'ascending' ? <span className="sort-icon">🔼</span> : <span className="sort-icon">🔽</span>;
   };
+  const handleImportSuccess = () => {
+    setShowImportModal(false); // Bezárjuk a modális ablakot
+    fetchPersonel(); // Frissítjük a személyi állomány listáját
+  };
 
   if (loading) return <p>Személyi állomány betöltése...</p>;
 
@@ -114,9 +126,21 @@ export function PersonelPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Személyi állomány</h1>
-        {canModify && (<button onClick={() => setShowAddForm(true)}>Új személy felvétele</button>)}
+        <div>
+          {/* ÚJ GOMB */}
+          <button onClick={() => setShowImportModal(true)} style={{ marginRight: '1rem' }}>
+            Importálás
+          </button>
+          <button onClick={() => setShowAddForm(true)}>Új személy felvétele</button>
+        </div>
       </div>
-
+      {/* ÚJ MODÁLIS ABLAK RENDERELÉSE */}
+      {showImportModal && (
+        <PersonelImportModal 
+          onClose={() => setShowImportModal(false)} 
+          onImportSuccess={handleImportSuccess} 
+        />
+      )}
       {error && <p style={{ color: 'red' }}>{error}</p>}
       
       <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1rem 0' }}>

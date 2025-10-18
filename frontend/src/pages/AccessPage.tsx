@@ -29,9 +29,9 @@ export function AccessPage() {
         handleSearchChange,
         requestSort,
         sortConfig
-    } = useTableControls({
+    } = useTableControls<Access>({
         data: accessList,
-        filterFn: (access, term) => 
+        filterFn: (access, term) =>
             access.personel.nev.toLowerCase().includes(term.toLowerCase()) ||
             access.system.systemname.toLowerCase().includes(term.toLowerCase()),
     });
@@ -47,7 +47,7 @@ export function AccessPage() {
     useEffect(() => { fetchAccessList(); }, []);
 
     const handleRevoke = async (accessId: number) => {
-        if(window.confirm('Biztosan visszavonja ezt a hozzáférést?')) {
+        if (window.confirm('Biztosan visszavonja ezt a hozzáférést?')) {
             try {
                 await revokeAccess(accessId);
                 fetchAccessList();
@@ -61,13 +61,13 @@ export function AccessPage() {
         setShowGrantForm(false);
         fetchAccessList();
     }
-    
-    const getSortIcon = (key: keyof Access) => {
+
+    const getSortIcon = (key: string) => {
         if (!sortConfig || sortConfig.key !== key) return <span className="sort-icon">↕️</span>;
         return sortConfig.direction === 'ascending' ? <span className="sort-icon">🔼</span> : <span className="sort-icon">🔽</span>;
     };
 
-    if(loading) return <p>Hozzáférések betöltése...</p>;
+    if (loading) return <p>Hozzáférések betöltése...</p>;
 
     return (
         <div>
@@ -77,9 +77,9 @@ export function AccessPage() {
             </div>
 
             {error && <p style={{ color: 'red' }}>{error}</p>}
-            
+
             <div style={{ display: 'flex', justifyContent: 'space-between', margin: '1rem 0' }}>
-                <input type="text" placeholder="Keresés személy vagy rendszer alapján..." value={searchTerm} onChange={(e) => handleSearchChange(e.target.value)} style={{ width: '300px' }}/>
+                <input type="text" placeholder="Keresés személy vagy rendszer alapján..." value={searchTerm} onChange={(e) => handleSearchChange(e.target.value)} style={{ width: '300px' }} />
                 <div>
                     <label>Elemek/oldal: </label>
                     <select value={itemsPerPage} onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}>
@@ -92,8 +92,8 @@ export function AccessPage() {
                 <table className="personel-table">
                     <thead>
                         <tr>
-                            <th className="sortable" onClick={() => requestSort('personel')}>Személy {getSortIcon('personel')}</th>
-                            <th className="sortable" onClick={() => requestSort('system')}>Rendszer {getSortIcon('system')}</th>
+                            <th className="sortable" onClick={() => requestSort('personel.nev')}>Személy {getSortIcon('personel.nev')}</th>
+                            <th className="sortable" onClick={() => requestSort('system.systemname')}>Rendszer {getSortIcon('system.systemname')}</th>
                             <th className="sortable" onClick={() => requestSort('access_level')}>Jogosultság {getSortIcon('access_level')}</th>
                             <th>Műveletek</th>
                         </tr>
@@ -105,7 +105,7 @@ export function AccessPage() {
                                 <td>{access.system.systemname}</td>
                                 <td>{access.access_level.toUpperCase()}</td>
                                 <td>
-                                    <button onClick={() => handleRevoke(access.access_id)} style={{color: 'red'}}>Visszavonás</button>
+                                    <button onClick={() => handleRevoke(access.access_id)} style={{ color: 'red' }}>Visszavonás</button>
                                 </td>
                             </tr>
                         ))}

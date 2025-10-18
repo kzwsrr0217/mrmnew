@@ -1,3 +1,5 @@
+// mrmnew/frontend/src/pages/LoginPage.tsx
+
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
@@ -15,16 +17,18 @@ export function LoginPage() {
     setError(null);
     try {
       const response = await loginApi({ username, password });
-      // A login függvénynek most már a user adatokat is átadjuk
       auth.login(response.data.access_token, response.data.user);
-      navigate('/');
+      
+      // --- ITT A JAVÍTÁS ---
+      // A gyökér ('/') helyett a '/systems' oldalra irányítunk át.
+      navigate('/systems');
+
     } catch (err) {
       setError('Hibás felhasználónév vagy jelszó!');
     }
   };
 
   return (
-    // ... a JSX rész változatlan marad ...
     <div style={{ maxWidth: '400px', margin: '10rem auto', textAlign: 'center' }}>
       <h1>MRM Bejelentkezés</h1>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
