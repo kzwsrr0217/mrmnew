@@ -1,3 +1,5 @@
+// mrmnew/frontend/src/pages/PersonelPage.tsx
+
 import { useState, useEffect, Fragment } from 'react';
 import { getPersonel, deletePersonel } from '../services/api.service';
 import { AddPersonelForm } from '../components/AddPersonelForm';
@@ -6,7 +8,17 @@ import { useAuth } from '../auth/AuthContext';
 import { UserRole } from '../types';
 import { useTableControls } from '../hooks/useTableControls';
 import { formatDate } from '../utils/date.utils';
-import { PersonelImportModal } from '../components/PersonelImportModal'; // <-- ÚJ IMPORT
+import { PersonelImportModal } from '../components/PersonelImportModal';
+
+// --- Interfész a hozzáférésekhez ---
+interface SystemAccess {
+  access_id: number;
+  access_level: string;
+  system: {
+    systemid: number;
+    systemname: string;
+  };
+}
 
 interface Personel {
   personel_id: number;
@@ -25,7 +37,9 @@ interface Personel {
     nato_szint: { classification_id: number, level_name: string } | null;
     eu_szint: { classification_id: number, level_name: string } | null;
   };
+  system_accesses: SystemAccess[];
 }
+// -------------------------------------------------
 
 const getPersonelRowStatus = (psd: Personel['personal_security_data']): string => {
     if (!psd) return '';
@@ -52,7 +66,7 @@ export function PersonelPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingPersonel, setEditingPersonel] = useState<Personel | null>(null);
   const [expandedRowId, setExpandedRowId] = useState<number | null>(null);
-  const [showImportModal, setShowImportModal] = useState(false); // <-- ÚJ STATE
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const canModify = user?.role === UserRole.ADMIN || user?.role === UserRole.SZBF;
 
@@ -88,20 +102,17 @@ export function PersonelPage() {
     fetchPersonel();
   };
 
-  // --- EZ A FÜGGVÉNY MÓDOSULT ---
   const handleDelete = async (personelId: number) => {
     if (window.confirm('Biztosan törli ezt a személyt?')) {
         try {
             await deletePersonel(personelId);
             fetchPersonel();
-        } catch (err: any) { // Típus any, hogy hozzáférjünk a response-hoz
+        } catch (err: any) {
             if (err.response && err.response.status === 409) {
-                // Specifikus hibaüzenet a backendtől, ha a státuszkód 409 (Conflict)
                 alert(err.response.data.message);
             } else {
-                // Általános hibaüzenet minden más esetre
                 alert('A törlés sikertelen.');
-                console.error("Törlési hiba:", err); // Logoljuk a részletes hibát a konzolra
+                console.error("Törlési hiba:", err);
             }
         }
     }
@@ -116,8 +127,8 @@ export function PersonelPage() {
     return sortConfig.direction === 'ascending' ? <span className="sort-icon">🔼</span> : <span className="sort-icon">🔽</span>;
   };
   const handleImportSuccess = () => {
-    setShowImportModal(false); // Bezárjuk a modális ablakot
-    fetchPersonel(); // Frissítjük a személyi állomány listáját
+    setShowImportModal(false);
+    fetchPersonel();
   };
 
   if (loading) return <p>Személyi állomány betöltése...</p>;
@@ -127,14 +138,12 @@ export function PersonelPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Személyi állomány</h1>
         <div>
-          {/* ÚJ GOMB */}
           <button onClick={() => setShowImportModal(true)} style={{ marginRight: '1rem' }}>
             Importálás
           </button>
           <button onClick={() => setShowAddForm(true)}>Új személy felvétele</button>
         </div>
       </div>
-      {/* ÚJ MODÁLIS ABLAK RENDERELÉSE */}
       {showImportModal && (
         <PersonelImportModal 
           onClose={() => setShowImportModal(false)} 
@@ -156,7 +165,7 @@ export function PersonelPage() {
       <div className="table-container">
         <table className="personel-table">
           <thead>
-            <tr>
+    J       <tr>
               <th className="sortable" onClick={() => requestSort('nev')}>Név {getSortIcon('nev')}</th>
               <th>Rendfokozat</th>
               <th>Beosztás</th>
@@ -184,6 +193,30 @@ export function PersonelPage() {
                         <div><h4>Nemzeti Tanúsítvány</h4><p><strong>Szint:</strong> {p.personal_security_data?.nemzeti_szint?.level_name || '-'}</p><p><strong>Kelte:</strong> {formatDate(p.personal_security_data.szbt_datum)}</p><p><strong>Lejárata:</strong> {formatDate(p.personal_security_data.szbt_lejarat)}</p></div>
                         <div><h4>NATO Tanúsítvány</h4><p><strong>Szint:</strong> {p.personal_security_data?.nato_szint?.level_name || '-'}</p><p><strong>Kelte:</strong> {formatDate(p.personal_security_data.nato_datum)}</p><p><strong>Lejárata:</strong> {formatDate(p.personal_security_data.nato_lejarat)}</p></div>
                         <div><h4>EU Tanúsítvány</h4><p><strong>Szint:</strong> {p.personal_security_data?.eu_szint?.level_name || '-'}</p><p><strong>Kelte:</strong> {formatDate(p.personal_security_data.eu_datum)}</p><p><strong>Lejárata:</strong> {formatDate(p.personal_security_data.eu_lejarat)}</p></div>
+                      
+                        {/* --- "Rendszer Hozzáférések" blokk --- */}
+                        <div className="access-details">
+                          <h4>Rendszer Hozzáférések</h4>
+                          {(!p.system_accesses || p.system_accesses.length === 0) ? (
+                            <p>Nincs rögzített rendszerhozzáférés.</p>
+                          ) : (
+                            // --- JAVÍTÁS ITT KEZDŐDIK ---
+                            <> 
+                              {/* Jobban olvasható lista a hozzáférésekről */}
+                              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                                {p.system_accesses.map(access => (
+                                  <li key={access.access_id}>
+                                    <strong>{access.system?.systemname || 'Ismeretlen rendszer'}</strong>
+                                    <span style={{ textTransform: 'uppercase', marginLeft: '8px', fontWeight: 'bold' }}>
+                                      ({access.access_level})
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </>
+                            // --- JAVÍTÁS ITT ÉR VÉGET ---
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>

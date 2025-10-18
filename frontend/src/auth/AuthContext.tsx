@@ -7,6 +7,10 @@ import { getNotifications } from '../services/api.service';
 interface NotificationData {
   openTickets: any[];
   pendingApprovals: any[];
+  // JAVÍTVA: Új mezők az interfészben
+  expiringPermits?: any[];
+  expiringCertificates?: any[];
+  allOpenTickets?: any[]; // Adminnak
 }
 
 interface AuthContextType {
@@ -20,6 +24,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// JAVÍTVA: Alapértelmezett értesítési állapot
+const initialNotifications: NotificationData = {
+  openTickets: [],
+  pendingApprovals: [],
+  expiringPermits: [],
+  expiringCertificates: [],
+  allOpenTickets: [],
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     const storedUser = localStorage.getItem('user');
@@ -30,17 +43,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   });
 
-  const [notifications, setNotifications] = useState<NotificationData>({ openTickets: [], pendingApprovals: [] });
+  // JAVÍTVA: Az új alapértelmezett állapot használata
+  const [notifications, setNotifications] = useState<NotificationData>(initialNotifications);
   const isAuthenticated = !!user;
 
   const fetchNotifications = async () => {
     if (isAuthenticated) {
       try {
         const res = await getNotifications();
-        setNotifications(res.data);
+        // Biztosítjuk, hogy minden mező létezzen, még ha a API null-t is ad vissza
+        setNotifications({
+            ...initialNotifications, // Kezdjük az alapértelmezettel
+            ...res.data // Majd felülírjuk az API válaszával
+        });
       } catch (error) {
         console.error("Értesítések betöltése sikertelen", error);
-        setNotifications({ openTickets: [], pendingApprovals: [] }); 
+        setNotifications(initialNotifications); 
       }
     }
   };
@@ -65,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
     setUser(null);
-    setNotifications({ openTickets: [], pendingApprovals: [] });
+    setNotifications(initialNotifications); // JAVÍTVA
   };
 
   return (

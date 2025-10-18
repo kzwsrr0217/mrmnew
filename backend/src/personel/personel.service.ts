@@ -46,17 +46,22 @@ export class PersonelService {
     return this.personelRepo.save(personel);
   }
 
-  findAll(search?: string): Promise<Personel[]> {
+findAll(search?: string): Promise<Personel[]> {
     const findOptions = {
         relations: {
             personal_security_data: {
                 nemzeti_szint: true,
                 nato_szint: true,
-                eu_szint: true,
+                eu_szint: true // <- VESSZŐ ELTÁVOLÍTVA
             },
+            // --- JAVÍTVA: Bővítettük a relációk listáját ---
+            system_accesses: {
+                system: true // Betöltjük a kapcsolódó rendszer adatait (pl. a nevét) // <- VESSZŐ ELTÁVOLÍTVA
+            } // <- VESSZŐ ELTÁVOLÍTVA
+            // --------------------------------------------
         },
         where: {},
-        order: { nev: 'ASC' } as any,
+        order: { nev: 'ASC' } as any // <- VESSZŐ ELTÁVOLÍTVA
     };
 
     if (search) {

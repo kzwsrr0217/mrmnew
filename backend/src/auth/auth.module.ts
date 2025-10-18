@@ -8,7 +8,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from './constants';
 import { JwtStrategy } from './jwt.strategy';
 import { AuthController } from './auth.controller';
-import { LocalStrategy } from './local.strategy'; // <-- ÚJ IMPORT
+import { LocalStrategy } from './local.strategy';
+// RequestContextModule import már nem kell, mert Global
+// JwtAuthGuard import már nem kell itt
 
 @Module({
   imports: [
@@ -16,13 +18,15 @@ import { LocalStrategy } from './local.strategy'; // <-- ÚJ IMPORT
     PassportModule,
     JwtModule.register({
       secret: jwtConstants.secret,
-      signOptions: { expiresIn: '8h' },
+      signOptions: { expiresIn: '1d' },
     }),
+    // RequestContextModule import már nem kell
   ],
   providers: [
     AuthService,
-    LocalStrategy, // <-- EZT A SORT ADD HOZZÁ
-    JwtStrategy
+    LocalStrategy,
+    JwtStrategy,
+    // JwtAuthGuard kivéve a provider-ek közül
   ],
   controllers: [AuthController],
 })

@@ -1,17 +1,24 @@
+// mrmnew/backend/src/audit/audit.module.ts
+
 import { Module } from '@nestjs/common';
-import { AuditService } from './audit.service';
-import { AuditController } from './audit.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuditLog } from './audit-log.entity';
+import { AuditService } from './audit.service';
+import { AuditController } from './audit.controller';
+import { User } from 'src/users/user.entity';
 import { AuditSubscriber } from './audit.subscriber';
+import { RequestContextModule } from 'src/request-context/request-context.module'; // <-- ÚJ IMPORT
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AuditLog])],
+  imports: [
+    TypeOrmModule.forFeature([AuditLog, User]),
+    RequestContextModule, // <-- JAVÍTVA: Importáljuk
+  ],
+  providers: [
+    AuditService,
+    AuditSubscriber
+  ],
   controllers: [AuditController],
-  providers: [AuditService, AuditSubscriber],
-  // ==================== A JAVÍTÁS ====================
-  // Ezzel tesszük az AuditService-t elérhetővé más modulok számára.
   exports: [AuditService],
-  // ===================================================
 })
 export class AuditModule {}

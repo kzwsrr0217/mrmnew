@@ -47,8 +47,8 @@ export class DashboardService {
     // 3. Legutóbbi aktivitás
     // JAVÍTVA: Az auditService.findAll metódus nem vár paramétert a te kódodban.
     // Lekérjük az összeset és a kódban vesszük az utolsó 5-öt.
-    const allAuditLogs = await this.auditService.findAll();
-    const recentAuditLogs = allAuditLogs
+    const auditLogResponse = await this.auditService.findAll({});
+    const recentAuditLogs = auditLogResponse.data // <-- JAVÍTÁS (52. sor környéke)
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 5);
 

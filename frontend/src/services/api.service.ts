@@ -67,8 +67,11 @@ export const claimTicket = (id: number) => apiClient.patch(`/tickets/${id}/claim
 
 
 // --- Naplózás (Audit) végpontok ---
-export const getAuditLogs = () => {
-  return apiClient.get('/audit');
+export const getAuditLogs = (params: any) => {
+  return apiClient.get('/audit', { params });
+};
+export const getAuditFilterOptions = () => {
+  return apiClient.get('/audit/filter-options');
 };
 
 // --- Karbantartási Napló (Maintenance) végpontok ---
