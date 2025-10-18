@@ -19,27 +19,49 @@ export class TicketsService {
     private eventEmitter: EventEmitter2,
   ) {}
 
-  async create(dto: CreateTicketDto, creatorPayload: { userId: number }): Promise<Ticket> {
-    const creator = await this.usersRepository.findOneBy({ id: creatorPayload.userId });
-    if (!creator) {
-      throw new NotFoundException('A ticketet létrehozó felhasználó nem található.');
+async create(dto: CreateTicketDto, creatorPayload: { userId: number }): Promise<Ticket> {
+    // 1. Naplózzuk, hogy a kérés egyáltalán beérkezett-e és milyen adatokkal
+    this.logger.log(`Új ticket létrehozásának kísérlete a következő adatokkal: ${JSON.stringify(dto)}`);
+    
+    try {
+        const creator = await this.usersRepository.findOneBy({ id: creatorPayload.userId });
+        if (!creator) {
+            // 2. Naplózzuk, ha a LÉTREHOZÓT nem találjuk
+            this.logger.error(`HIBA: A ticketet létrehozó felhasználó (ID: ${creatorPayload.userId}) nem található az adatbázisban.`);
+            throw new NotFoundException('A ticketet létrehozó felhasználó nem található.');
+        }
+
+        const newTicket = this.ticketsRepository.create({
+            ...dto,
+            creator: creator,
+        });
+
+        // Csak akkor lépünk be ide, ha a frontend küldött 'assignee_id'-t
+        if (dto.assignee_id) {
+            this.logger.log(`Felelős keresése a következő ID alapján: ${dto.assignee_id}...`);
+            const assignee = await this.usersRepository.findOneBy({ id: dto.assignee_id });
+            
+            if (!assignee) {
+                // 3. Naplózzuk, ha a FELELŐST nem találjuk
+                this.logger.error(`HIBA: A hozzárendelni kívánt felelős (ID: ${dto.assignee_id}) nem található az adatbázisban.`);
+                throw new NotFoundException(`A(z) ${dto.assignee_id} azonosítójú felelős felhasználó nem található.`);
+            }
+            
+            this.logger.log(`Felelős (${assignee.username}) sikeresen megtalálva és hozzárendelve.`);
+            newTicket.assignee = assignee;
+        }
+
+        const savedTicket = await this.ticketsRepository.save(newTicket);
+        this.logger.log(`OK: Ticket #${savedTicket.ticket_id} sikeresen létrehozva és elmentve.`);
+        return savedTicket;
+
+    } catch (error) {
+        // 4. Bármilyen egyéb, váratlan hiba esetén itt fogjuk elkapni és naplózni
+        this.logger.error(`VÁRATLAN HIBA a ticket mentése ('save' művelet) során:`, error.stack);
+        // Dobjuk tovább az eredeti hibát, hogy a frontend is megkapja
+        throw error;
     }
-
-    const newTicket = this.ticketsRepository.create({
-      ...dto,
-      creator: creator,
-    });
-
-    if (dto.assignee_id) {
-      const assignee = await this.usersRepository.findOneBy({ id: dto.assignee_id });
-      if (!assignee) {
-        throw new NotFoundException(`A(z) ${dto.assignee_id} azonosítójú felhasználó nem található.`);
-      }
-      newTicket.assignee = assignee;
-    }
-
-    return this.ticketsRepository.save(newTicket);
-  }
+}
 
   findAll(): Promise<Ticket[]> {
     return this.ticketsRepository.find({

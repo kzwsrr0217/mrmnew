@@ -8,27 +8,26 @@ import { useAuth } from '../auth/AuthContext';
 interface User {
   id: number;
   username: string;
-  role: UserRole; // A szerepkört is lekérjük
+  role: UserRole;
 }
 
 interface AddTicketFormProps {
-  onTicketAdded: () => void;
+  onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function AddTicketForm({ onTicketAdded, onCancel }: AddTicketFormProps) {
-  const { user: currentUser } = useAuth(); // A bejelentkezett felhasználó
+export function AddTicketForm({ onSuccess, onCancel }: AddTicketFormProps) {
+  const { user: currentUser } = useAuth();
   const isApk = currentUser?.role === UserRole.ALEGYSEGPARANCSNOK;
 
   const [title, setTitle] = useState(isApk ? 'Új hozzáférés igénylése' : '');
   const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState<TicketPriority>(isApk ? TicketPriority.NORMAL : TicketPriority.NORMAL);
+  const [priority, setPriority] = useState<TicketPriority>(TicketPriority.NORMAL);
   const [assigneeId, setAssigneeId] = useState<string>('');
   
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Keressük meg az első RBF felhasználót, akinek a ticketet címezzük
   const rbfUserId = useMemo(() => {
     if (!isApk) return '';
     const rbfUser = users.find(u => u.role === UserRole.RBF);
@@ -50,14 +49,14 @@ export function AddTicketForm({ onTicketAdded, onCancel }: AddTicketFormProps) {
         title,
         description,
         priority,
-        // Ha APK a felhasználó, automatikusan az RBF-nek küldjük, egyébként a kiválasztottnak
         assignee_id: isApk ? Number(rbfUserId) : (assigneeId ? Number(assigneeId) : undefined),
       });
-      onTicketAdded();
+      onSuccess(); // A helyes függvény hívása
     } catch (err) {
       setError('Hiba a ticket létrehozása közben.');
+      console.error("Hiba a ticket létrehozása során:", err);
     }
-  };
+  } // <-- NINCS UTÁNA PONTOSVESSZŐ
 
   return (
     <div className="modal-backdrop">
@@ -71,7 +70,7 @@ export function AddTicketForm({ onTicketAdded, onCancel }: AddTicketFormProps) {
             onChange={e => setTitle(e.target.value)} 
             placeholder="Feladat címe" 
             required 
-            disabled={isApk} // Az APK nem módosíthatja a címet
+            disabled={isApk}
           />
           <textarea 
             value={description} 
@@ -87,7 +86,6 @@ export function AddTicketForm({ onTicketAdded, onCancel }: AddTicketFormProps) {
             </select>
           </div>
           
-          {/* A hozzárendelés legördülő menü elrejtése, ha a felhasználó APK */}
           {!isApk && (
             <div>
               <label>Hozzárendelés:</label>

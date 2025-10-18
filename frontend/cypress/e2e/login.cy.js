@@ -15,7 +15,6 @@ describe('Bejelentkezési Folyamat', () => {
     
     cy.url().should('include', '/systems');
     
-    // Itt van a javítás:
     cy.contains('h1', 'Rendszerek Nyilvántartása').should('be.visible');
   });
 
